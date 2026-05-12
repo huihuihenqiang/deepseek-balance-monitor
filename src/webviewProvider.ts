@@ -207,6 +207,65 @@ export class BalancePanelProvider implements vscode.WebviewViewProvider {
       margin-bottom: 12px;
       font-size: 12px;
     }
+.section-divider {
+  border-top: 1px solid var(--vscode-widget-border);
+  margin: 20px 0 16px;
+}
+.section-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+.overview-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.ov-item {
+  background: var(--vscode-editor-background);
+  border: 1px solid var(--vscode-widget-border);
+  border-radius: 4px;
+  padding: 10px;
+  text-align: center;
+}
+.ov-label { color: var(--vscode-descriptionForeground); font-size: 11px; }
+.ov-value { font-size: 18px; font-weight: 700; margin-top: 2px; }
+.cost-projection {
+  background: var(--vscode-editor-background);
+  border: 1px solid var(--vscode-widget-border);
+  border-radius: 4px;
+  padding: 10px 14px;
+  margin: 12px 0;
+  font-size: 13px;
+  text-align: center;
+}
+.claude-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+#topSessionsList {
+  font-size: 12px;
+}
+#topSessionsList .session-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--vscode-widget-border);
+}
+#topSessionsList .session-row:last-child { border-bottom: none; }
+.refresh-hint {
+  color: var(--vscode-descriptionForeground);
+  font-size: 11px;
+  text-align: center;
+  margin-top: 4px;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.refresh-hint.visible { opacity: 1; }
+
   </style>
 </head>
 <body>
@@ -230,6 +289,7 @@ export class BalancePanelProvider implements vscode.WebviewViewProvider {
         <div class="detail-value" id="granted">--</div>
       </div>
     </div>
+    <div class="refresh-hint" id="refreshHint"></div>
   </div>
 
   <div class="chart-container" id="chartContainer">
@@ -254,6 +314,55 @@ export class BalancePanelProvider implements vscode.WebviewViewProvider {
       <div class="stat-label">Total Consumed</div>
       <div class="stat-value" id="statTotal">--</div>
     </div>
+  </div>
+
+  <!-- Claude Code Usage Section -->
+  <div class="section-divider"></div>
+  <div class="section-title">Claude Code Usage</div>
+
+  <div class="overview-grid">
+    <div class="ov-item">
+      <div class="ov-label">Total Tokens</div>
+      <div class="ov-value" id="claudeTokens">--</div>
+    </div>
+    <div class="ov-item">
+      <div class="ov-label">Est. Cost</div>
+      <div class="ov-value" id="claudeCost">--</div>
+    </div>
+    <div class="ov-item">
+      <div class="ov-label">API Calls</div>
+      <div class="ov-value" id="claudeCalls">--</div>
+    </div>
+    <div class="ov-item">
+      <div class="ov-label">Cache Hit Rate</div>
+      <div class="ov-value" id="claudeCacheRate">--</div>
+    </div>
+  </div>
+
+  <div class="chart-container" id="claudeChartContainer">
+    <div class="chart-title">Token / Cost Trend (7 days)</div>
+    <canvas id="claudeTrendChart"></canvas>
+  </div>
+
+  <div class="chart-container" id="pieChartContainer">
+    <div class="chart-title">Model Distribution</div>
+    <canvas id="modelPieChart"></canvas>
+  </div>
+
+  <div class="chart-container" id="topSessionsContainer">
+    <div class="chart-title">Top Sessions (by cost)</div>
+    <div id="topSessionsList"></div>
+  </div>
+
+  <div class="cost-projection" id="costProjection">
+    <span>Projected this month: </span>
+    <span id="projectedCost">--</span>
+  </div>
+
+  <div class="claude-actions">
+    <button class="refresh-btn" id="claudeRefreshBtn">⟳ Scan Local Data</button>
+    <button class="refresh-btn" id="exportBtn">📋 Export CSV</button>
+    <span class="last-updated" id="claudeUpdatedAt"></span>
   </div>
 
   <script src="${panelJsUri}"></script>
