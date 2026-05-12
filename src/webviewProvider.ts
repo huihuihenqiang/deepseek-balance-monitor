@@ -225,7 +225,7 @@ export class BalancePanelProvider implements vscode.WebviewViewProvider {
 }
 .overview-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr 1fr 1fr;
   gap: 8px;
   margin-bottom: 16px;
 }
@@ -277,6 +277,8 @@ export class BalancePanelProvider implements vscode.WebviewViewProvider {
 </head>
 <body>
   <div id="error" class="error-banner" style="display:none"></div>
+
+  <div class="section-title">DeepSeek Usage</div>
 
   <div class="header">
     <span class="last-updated" id="updatedAt">Waiting for data...</span>
@@ -333,10 +335,6 @@ export class BalancePanelProvider implements vscode.WebviewViewProvider {
       <div class="ov-value" id="claudeTokens">--</div>
     </div>
     <div class="ov-item">
-      <div class="ov-label">Est. Cost</div>
-      <div class="ov-value" id="claudeCost">--</div>
-    </div>
-    <div class="ov-item">
       <div class="ov-label">API Calls</div>
       <div class="ov-value" id="claudeCalls">--</div>
     </div>
@@ -347,7 +345,7 @@ export class BalancePanelProvider implements vscode.WebviewViewProvider {
   </div>
 
   <div class="chart-container" id="claudeChartContainer">
-    <div class="chart-title">Token / Cost Trend (7 days)</div>
+    <div class="chart-title">Token Usage (7 days)</div>
     <canvas id="claudeTrendChart"></canvas>
   </div>
 
@@ -357,7 +355,7 @@ export class BalancePanelProvider implements vscode.WebviewViewProvider {
   </div>
 
   <div class="chart-container" id="topSessionsContainer">
-    <div class="chart-title">Top Sessions (by cost)</div>
+    <div class="chart-title">Project Ranking (by tokens)</div>
     <div id="topSessionsList"></div>
   </div>
 

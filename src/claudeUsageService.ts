@@ -5,7 +5,7 @@ import * as os from 'os';
 import * as readline from 'readline';
 import {
   TokenStats, ModelPricing, ModelUsage, SessionUsage,
-  DailyStats, ClaudeUsageData
+  DailyStats, ClaudeUsageData, ProjectUsage
 } from './types';
 
 function sumStats(stats: TokenStats[]): TokenStats {
@@ -146,6 +146,7 @@ export class ClaudeUsageService {
 
     const modelMap = new Map<string, { stats: TokenStats; count: number }>();
     const sessionMap = new Map<string, SessionUsage>();
+    const projectMap = new Map<string, { stats: TokenStats; callCount: number; messageCount: number }>();
     const dailyMap = new Map<string, { stats: TokenStats; count: number; models: Record<string, TokenStats> }>();
     let globalStats: TokenStats = { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheCreateTokens: 0 };
     let callCount = 0;
@@ -188,6 +189,17 @@ export class ClaudeUsageService {
         mm.stats.cacheReadTokens += usage.cache_read_input_tokens || 0;
         mm.stats.cacheCreateTokens += usage.cache_creation_input_tokens || 0;
         mm.count++;
+
+        // Per project
+        const projDir = msg._projectDir || 'unknown';
+        let pp = projectMap.get(projDir);
+        if (!pp) { pp = { stats: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheCreateTokens: 0 }, callCount: 0, messageCount: 0 }; projectMap.set(projDir, pp); }
+        pp.stats.inputTokens += usage.input_tokens || 0;
+        pp.stats.outputTokens += usage.output_tokens || 0;
+        pp.stats.cacheReadTokens += usage.cache_read_input_tokens || 0;
+        pp.stats.cacheCreateTokens += usage.cache_creation_input_tokens || 0;
+        pp.callCount++;
+        pp.messageCount++;
 
         // Per session
         const sid = msg.sessionId || 'unknown';
@@ -237,8 +249,14 @@ export class ClaudeUsageService {
     }
 
     // Compute model usage with cost
+    // Filter out internal/synthetic models
+    function isRealModel(name: string): boolean {
+      return !!name && name !== '<synthetic>' && !name.startsWith('<');
+    }
+
     const modelUsage: ModelUsage[] = [];
     for (const [model, m] of modelMap) {
+      if (!isRealModel(model)) { continue; }
       const p = pricing[model] || defaultPricing;
       const cost =
         (m.stats.inputTokens / 1_000_000) * p.inputPerMTok +
@@ -249,7 +267,7 @@ export class ClaudeUsageService {
     }
     modelUsage.sort((a, b) => b.cost - a.cost);
 
-    // Compute total cost
+    // Compute total cost (only for real models)
     let totalCost = 0;
     for (const m of modelUsage) { totalCost += m.cost; }
 
@@ -312,6 +330,21 @@ export class ClaudeUsageService {
     const daysCovered = dailyStats.length || 1;
     const projectedMonthlyCost = (totalCost / daysCovered) * 30;
 
+    // Project-based ranking (by total tokens)
+    const topProjects: ProjectUsage[] = [];
+    for (const [projDir, p] of projectMap) {
+      topProjects.push({ projectDir: projDir, tokenStats: p.stats, callCount: p.callCount, messageCount: p.messageCount });
+    }
+    topProjects.sort((a, b) => {
+      const aTotal = a.tokenStats.inputTokens + a.tokenStats.outputTokens + a.tokenStats.cacheReadTokens;
+      const bTotal = b.tokenStats.inputTokens + b.tokenStats.outputTokens + b.tokenStats.cacheReadTokens;
+      return bTotal - aTotal;
+    });
+
+    // Project monthly tokens
+    const totalTokens = globalStats.inputTokens + globalStats.outputTokens + globalStats.cacheReadTokens;
+    const projectedMonthlyTokens = (totalTokens / daysCovered) * 30;
+
     const debugInfo = 'entries=' + this.parsedMessages.size +
       ' totalMsgs=' + totalMessages +
       ' assistantMsgs=' + assistantMessages +
@@ -327,7 +360,9 @@ export class ClaudeUsageService {
       modelUsage,
       dailyStats,
       topSessions,
+      topProjects,
       projectedMonthlyCost,
+      projectedMonthlyTokens,
       debugInfo,
     };
   }

@@ -1,7 +1,7 @@
 {
   "name": "deepseek-balance-monitor",
-  "displayName": "DeepSeek Balance Monitor",
-  "description": "Monitor your DeepSeek API balance in real-time",
+  "displayName": "AI Usage Monitor",
+  "description": "Monitor DeepSeek API balance and Claude Code token usage",
   "version": "0.1.0",
   "publisher": "your-publisher-name",
   "engines": {
@@ -16,7 +16,7 @@
   "main": "./out/extension.js",
   "contributes": {
     "configuration": {
-      "title": "DeepSeek Balance Monitor",
+      "title": "AI Usage Monitor",
       "properties": {
         "deepseek-balance.apiKey": {
           "type": "string",
@@ -76,7 +76,7 @@
       "activitybar": [
         {
           "id": "deepseek-balance-sidebar",
-          "title": "DeepSeek Balance",
+          "title": "AI Usage",
           "icon": "$(graph-line)"
         }
       ]
@@ -86,7 +86,7 @@
         {
           "type": "webview",
           "id": "deepseek-balance.panel",
-          "name": "Balance Panel"
+          "name": "Usage Panel"
         }
       ]
     },

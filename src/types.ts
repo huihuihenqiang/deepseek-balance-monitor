@@ -59,6 +59,13 @@ export interface DailyStats {
   models: Record<string, TokenStats>;
 }
 
+export interface ProjectUsage {
+  projectDir: string;
+  tokenStats: TokenStats;
+  callCount: number;
+  messageCount: number;
+}
+
 export interface ClaudeUsageData {
   tokenStats: TokenStats;
   totalCost: number;
@@ -67,7 +74,9 @@ export interface ClaudeUsageData {
   modelUsage: ModelUsage[];
   dailyStats: DailyStats[];
   topSessions: SessionUsage[];
+  topProjects: ProjectUsage[];
   projectedMonthlyCost: number;
+  projectedMonthlyTokens: number;
   debugInfo?: string; // diagnostic info from scan
 }
 
