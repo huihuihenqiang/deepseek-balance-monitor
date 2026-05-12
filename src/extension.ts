@@ -28,8 +28,8 @@ export function activate(context: vscode.ExtensionContext) {
   function getPricingConfig(): Record<string, import('./types').ModelPricing> {
     const cfg = vscode.workspace.getConfiguration('deepseek-balance');
     return cfg.get<Record<string, import('./types').ModelPricing>>('modelPricing', {
-      'deepseek-v4-pro': { inputPerMTok: 3.0, cacheHitPerMTok: 0.025, outputPerMTok: 6.0 },
-      'deepseek-v4-flash': { inputPerMTok: 1.0, cacheHitPerMTok: 0.02, outputPerMTok: 2.0 },
+      'deepseek-v4-pro': { inputPerMTok: 3.0, cacheHitPerMTok: 0.025, cacheCreatePerMTok: 3.0, outputPerMTok: 6.0 },
+      'deepseek-v4-flash': { inputPerMTok: 1.0, cacheHitPerMTok: 0.02, cacheCreatePerMTok: 1.0, outputPerMTok: 2.0 },
     });
   }
 

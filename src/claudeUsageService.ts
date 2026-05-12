@@ -30,6 +30,7 @@ export class ClaudeUsageService {
   private timer: NodeJS.Timeout | null = null;
   private lastOffsets: Map<string, number> = new Map();
   private parsedMessages: Map<string, any[]> = new Map(); // sessionId -> messages
+  private isScanning = false;
 
   constructor(
     private getConfig: () => { scanInterval: number; modelPricing: Record<string, ModelPricing> }
@@ -43,45 +44,53 @@ export class ClaudeUsageService {
 
   stop(): void {
     if (this.timer) { clearInterval(this.timer); this.timer = null; }
+    this.isScanning = false;
   }
 
   restart(): void {
+    this.isScanning = false;
     this.stop();
     this.start();
   }
 
   /** Public for manual refresh */
   async scan(): Promise<void> {
-    const projectsDir = path.join(os.homedir(), '.claude', 'projects');
-    if (!fs.existsSync(projectsDir)) { return; }
+    if (this.isScanning) { return; }
+    this.isScanning = true;
+    try {
+      const projectsDir = path.join(os.homedir(), '.claude', 'projects');
+      if (!fs.existsSync(projectsDir)) { return; }
 
-    const projectDirs = fs.readdirSync(projectsDir).filter(d => {
-      const full = path.join(projectsDir, d);
-      return fs.statSync(full).isDirectory();
-    });
+      const projectDirs = fs.readdirSync(projectsDir).filter(d => {
+        const full = path.join(projectsDir, d);
+        return fs.statSync(full).isDirectory();
+      });
 
-    for (const dir of projectDirs) {
-      const projectPath = path.join(projectsDir, dir);
-      const files = fs.readdirSync(projectPath).filter(f => f.endsWith('.jsonl'));
-      for (const file of files) {
-        const filePath = path.join(projectPath, file);
-        const key = filePath;
-        const lastOffset = this.lastOffsets.get(key) || 0;
-        // Full read if no offset; otherwise only re-read if file grew
-        if (lastOffset > 0) {
-          // Incremental: read from lastOffset
-          await this.readLines(filePath, lastOffset, key, dir);
-        } else {
-          // Full read
-          await this.readLines(filePath, 0, key, dir);
+      for (const dir of projectDirs) {
+        const projectPath = path.join(projectsDir, dir);
+        const files = fs.readdirSync(projectPath).filter(f => f.endsWith('.jsonl'));
+        for (const file of files) {
+          const filePath = path.join(projectPath, file);
+          const key = filePath;
+          const lastOffset = this.lastOffsets.get(key) || 0;
+          // Full read if no offset; otherwise only re-read if file grew
+          if (lastOffset > 0) {
+            // Incremental: read from lastOffset
+            await this.readLines(filePath, lastOffset, key, dir);
+          } else {
+            // Full read
+            await this.readLines(filePath, 0, key, dir);
+          }
+          // Record current file size as offset for next scan
+          this.lastOffsets.set(key, fs.statSync(filePath).size);
         }
-        // Record current file size as offset for next scan
-        this.lastOffsets.set(key, fs.statSync(filePath).size);
       }
-    }
 
-    const data = this.computeUsage();
-    this._onDidUpdate.fire(data);
+      const data = this.computeUsage();
+      this._onDidUpdate.fire(data);
+    } finally {
+      this.isScanning = false;
+    }
   }
 
   private async readLines(
@@ -111,7 +120,7 @@ export class ClaudeUsageService {
 
   private computeUsage(): ClaudeUsageData {
     const pricing = this.getConfig().modelPricing || {};
-    const defaultPricing: ModelPricing = { inputPerMTok: 3.0, cacheHitPerMTok: 0.025, outputPerMTok: 6.0 };
+    const defaultPricing: ModelPricing = { inputPerMTok: 3.0, cacheHitPerMTok: 0.025, cacheCreatePerMTok: 3.0, outputPerMTok: 6.0 };
 
     const modelMap = new Map<string, { stats: TokenStats; count: number }>();
     const sessionMap = new Map<string, SessionUsage>();
@@ -197,6 +206,7 @@ export class ClaudeUsageService {
       const cost =
         (m.stats.inputTokens / 1_000_000) * p.inputPerMTok +
         (m.stats.cacheReadTokens / 1_000_000) * p.cacheHitPerMTok +
+        (m.stats.cacheCreateTokens / 1_000_000) * p.cacheCreatePerMTok +
         (m.stats.outputTokens / 1_000_000) * p.outputPerMTok;
       modelUsage.push({ model, ...m.stats, callCount: m.count, cost });
     }
@@ -219,6 +229,7 @@ export class ClaudeUsageService {
         cost +=
           (ts.inputTokens / 1_000_000) * p.inputPerMTok +
           (ts.cacheReadTokens / 1_000_000) * p.cacheHitPerMTok +
+          (ts.cacheCreateTokens / 1_000_000) * p.cacheCreatePerMTok +
           (ts.outputTokens / 1_000_000) * p.outputPerMTok;
       }
       dailyStats.push({ date, tokenStats: d.stats, cost, callCount: d.count, models: d.models });
@@ -246,6 +257,7 @@ export class ClaudeUsageService {
         const cost =
           (m.stats.inputTokens / 1_000_000) * p.inputPerMTok +
           (m.stats.cacheReadTokens / 1_000_000) * p.cacheHitPerMTok +
+          (m.stats.cacheCreateTokens / 1_000_000) * p.cacheCreatePerMTok +
           (m.stats.outputTokens / 1_000_000) * p.outputPerMTok;
         modelUsage.push({ model, ...m.stats, callCount: m.count, cost });
       }

@@ -31,6 +31,7 @@ export interface TokenStats {
 export interface ModelPricing {
   inputPerMTok: number;
   cacheHitPerMTok: number;
+  cacheCreatePerMTok: number;
   outputPerMTok: number;
 }
 
