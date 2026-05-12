@@ -156,7 +156,8 @@ export class ClaudeUsageService {
     for (const [, messages] of this.parsedMessages) {
       totalMessages += messages.length;
       for (const msg of messages) {
-        if (msg.type === 'assistant' && msg.usage) { assistantMessages++; }
+        const m = msg.message;
+        if (m && m.role === 'assistant' && m.usage) { assistantMessages++; }
       }
     }
     console.log('[DeepSeek Balance] computeUsage: parsedMessages entries=' + this.parsedMessages.size +
@@ -166,9 +167,11 @@ export class ClaudeUsageService {
 
     for (const [, messages] of this.parsedMessages) {
       for (const msg of messages) {
-        if (msg.type !== 'assistant' || !msg.usage) { continue; }
-        const usage = msg.usage;
-        const model = msg.model || 'unknown';
+        // Actual data is nested in msg.message (Claude Code session format)
+        const m = msg.message;
+        if (!m || m.role !== 'assistant' || !m.usage) { continue; }
+        const usage = m.usage;
+        const model = m.model || 'unknown';
         callCount++;
 
         // Accumulate global
@@ -275,14 +278,15 @@ export class ClaudeUsageService {
     for (const [, s] of sessionMap) {
       const smModels = new Map<string, { stats: TokenStats; count: number }>();
       for (const msg of (sessionMessages.get(s.sessionId) || [])) {
-        if (msg.type !== 'assistant' || !msg.usage) { continue; }
-        const model = msg.model || 'unknown';
+        const m = msg.message;
+        if (!m || m.role !== 'assistant' || !m.usage) { continue; }
+        const model = m.model || 'unknown';
         let sm = smModels.get(model);
         if (!sm) { sm = { stats: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheCreateTokens: 0 }, count: 0 }; smModels.set(model, sm); }
-        sm.stats.inputTokens += msg.usage.input_tokens || 0;
-        sm.stats.outputTokens += msg.usage.output_tokens || 0;
-        sm.stats.cacheReadTokens += msg.usage.cache_read_input_tokens || 0;
-        sm.stats.cacheCreateTokens += msg.usage.cache_creation_input_tokens || 0;
+        sm.stats.inputTokens += m.usage.input_tokens || 0;
+        sm.stats.outputTokens += m.usage.output_tokens || 0;
+        sm.stats.cacheReadTokens += m.usage.cache_read_input_tokens || 0;
+        sm.stats.cacheCreateTokens += m.usage.cache_creation_input_tokens || 0;
         sm.count++;
       }
       const modelUsage: ModelUsage[] = [];
