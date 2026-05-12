@@ -173,7 +173,8 @@ function drawChart(snapshots) {
   }
 }
 
-function renderClaudeModule(data) {
+function renderClaudeModule(data, scannedAt) {
+  if (!el('claudeTokens')) { return; }
   var totalTok = data.tokenStats.inputTokens + data.tokenStats.outputTokens + data.tokenStats.cacheReadTokens;
   el('claudeTokens').textContent = fmtNum(totalTok);
   el('claudeCost').textContent = '¥' + data.totalCost.toFixed(2);
@@ -186,7 +187,7 @@ function renderClaudeModule(data) {
   renderTopSessions(data.topSessions);
 
   if (el('claudeUpdatedAt')) {
-    el('claudeUpdatedAt').textContent = 'last scanned ' + formatUpdatedAt(Date.now());
+    el('claudeUpdatedAt').textContent = 'last scanned ' + formatUpdatedAt(scannedAt || Date.now());
   }
 }
 
@@ -323,6 +324,7 @@ function drawModelPie(modelUsage) {
   var colors = ['#4fc3f7', '#81c784', '#ffb74d', '#e57373', '#ba68c8', '#4dd0e1'];
   var totalCost = 0;
   for (var i = 0; i < modelUsage.length; i++) { totalCost += modelUsage[i].cost; }
+  if (totalCost === 0) { return; }
 
   var cx = w * 0.35;
   var cy = h * 0.5;
@@ -359,6 +361,10 @@ function drawModelPie(modelUsage) {
   }
 }
 
+function escapeHtml(s) {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
 function renderTopSessions(sessions) {
   var list = el('topSessionsList');
   if (!list) { return; }
@@ -372,7 +378,7 @@ function renderTopSessions(sessions) {
     var shortProject = s.projectDir;
     if (shortProject.length > 20) { shortProject = '...' + shortProject.slice(-17); }
     html += '<div class="session-row">' +
-      '<span>' + shortProject + ' / ' + shortId + ' (' + s.messageCount + ' msgs)</span>' +
+      '<span>' + escapeHtml(shortProject) + ' / ' + escapeHtml(shortId) + ' (' + s.messageCount + ' msgs)</span>' +
       '<span>¥' + cost.toFixed(2) + ' | ' + fmtNum(tokens) + ' tok</span>' +
       '</div>';
   }
@@ -402,7 +408,7 @@ window.addEventListener('message', function (event) {
       setTimeout(function () { hint.classList.remove('visible'); }, 3000);
     }
   } else if (msg.command === 'claudeUpdate') {
-    renderClaudeModule(msg.data);
+    renderClaudeModule(msg.data, msg.timestamp || Date.now());
   }
 });
 

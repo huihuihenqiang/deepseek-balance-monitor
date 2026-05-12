@@ -107,7 +107,7 @@ export class BalancePanelProvider implements vscode.WebviewViewProvider {
     this._claudeData = data;
     this._lastClaudeUsage = data;
     if (!this._view) { return; }
-    this._view.webview.postMessage({ command: 'claudeUpdate', data });
+    this._view.webview.postMessage({ command: 'claudeUpdate', data, timestamp: Date.now() });
   }
 
   getClaudeData(): import('./types').ClaudeUsageData | null {
