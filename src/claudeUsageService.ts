@@ -343,8 +343,19 @@ export class ClaudeUsageService {
     });
 
     // Project monthly tokens
+    // Weighted daily prediction: recent days count more (exponential decay factor 0.9)
     const totalTokens = globalStats.inputTokens + globalStats.outputTokens + globalStats.cacheReadTokens;
-    const projectedMonthlyTokens = (totalTokens / daysCovered) * 30;
+    let weightedDaily = 0;
+    let weightSum = 0;
+    let w = 1.0;
+    for (let i = dailyStats.length - 1; i >= 0; i--) {
+      const dayTokens = dailyStats[i].tokenStats.inputTokens + dailyStats[i].tokenStats.outputTokens + dailyStats[i].tokenStats.cacheReadTokens;
+      weightedDaily += dayTokens * w;
+      weightSum += w;
+      w *= 0.85; // each older day counts 85% as much
+    }
+    const avgDaily = weightSum > 0 ? weightedDaily / weightSum : (totalTokens / daysCovered);
+    const projectedMonthlyTokens = avgDaily * 30;
 
     const debugInfo = 'entries=' + this.parsedMessages.size +
       ' totalMsgs=' + totalMessages +

@@ -324,7 +324,6 @@ function drawModelPie(modelUsage) {
   var totalTokens = 0;
   for (var i = 0; i < modelTokens.length; i++) { totalTokens += modelTokens[i]; }
   if (totalTokens === 0) { return; }
-  if (totalCost === 0) { return; }
 
   var cx = w * 0.35;
   var cy = h * 0.5;
