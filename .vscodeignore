@@ -2,6 +2,7 @@
 src/**
 node_modules/**
 .github/**
+docs/**
 tsconfig.json
 .gitignore
 **/*.ts

@@ -2,8 +2,12 @@
   "name": "deepseek-balance-monitor",
   "displayName": "AI Usage Monitor",
   "description": "Monitor DeepSeek API balance and Claude Code token usage",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "publisher": "your-publisher-name",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/huihuihenqiang/deepseek-balance-monitor"
+  },
   "engines": {
     "vscode": "^1.85.0"
   },
