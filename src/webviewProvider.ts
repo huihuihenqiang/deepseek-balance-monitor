@@ -8,7 +8,6 @@ export class BalancePanelProvider implements vscode.WebviewViewProvider {
   private _lastBalance: { currency: string; total: string; granted: string; toppedUp: string } | null = null;
   private _lastError: string | null = null;
   private _lastClaudeUsage: import('./types').ClaudeUsageData | null = null;
-  private _claudeData: import('./types').ClaudeUsageData | null = null;
 
   constructor(
     private readonly extensionUri: vscode.Uri,
@@ -35,11 +34,6 @@ export class BalancePanelProvider implements vscode.WebviewViewProvider {
       if (msg.command === 'refresh') {
         LOG('Webview requested refresh');
         vscode.commands.executeCommand('deepseek-balance.refresh');
-      } else if (msg.command === 'claudeRefresh') {
-        LOG('Webview requested Claude refresh');
-        vscode.commands.executeCommand('deepseek-balance.claudeRefresh');
-      } else if (msg.command === 'exportCSV') {
-        vscode.commands.executeCommand('deepseek-balance.exportCSV');
       } else if (msg.command === 'ready') {
         LOG('Webview ready signal received');
         if (this._lastError) {
@@ -99,26 +93,16 @@ export class BalancePanelProvider implements vscode.WebviewViewProvider {
     this._view.webview.postMessage({ command: 'refreshing', active });
   }
 
-  setClaudeRefreshing(active: boolean): void {
-    if (!this._view) {return;}
-    this._view.webview.postMessage({ command: 'claudeRefreshing', active });
-  }
-
   showRefreshHint(): void {
     if (!this._view) { return; }
     this._view.webview.postMessage({ command: 'refreshHint', message: '余额未变化，可能官方数据未更新，请稍后再试' });
   }
 
   updateClaudeUsage(data: import('./types').ClaudeUsageData): void {
-    console.log('[DeepSeek Balance:Panel] updateClaudeUsage: cost=' + data.totalCost + ' calls=' + data.callCount + ' hasView=' + !!this._view);
-    this._claudeData = data;
+    console.log('[DeepSeek Balance:Panel] updateClaudeUsage: calls=' + data.callCount + ' hasView=' + !!this._view);
     this._lastClaudeUsage = data;
     if (!this._view) { return; }
     this._view.webview.postMessage({ command: 'claudeUpdate', data, timestamp: Date.now() });
-  }
-
-  getClaudeData(): import('./types').ClaudeUsageData | null {
-    return this._claudeData;
   }
 
   private getHtml(webview: vscode.Webview): string {
@@ -365,8 +349,6 @@ export class BalancePanelProvider implements vscode.WebviewViewProvider {
   </div>
 
   <div class="claude-actions">
-    <button class="refresh-btn" id="claudeRefreshBtn">⟳ Scan Local Data</button>
-    <button class="refresh-btn" id="exportBtn">📋 Export CSV</button>
     <span class="last-updated" id="claudeUpdatedAt"></span>
   </div>
 

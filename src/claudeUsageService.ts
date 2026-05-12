@@ -34,7 +34,7 @@ export class ClaudeUsageService {
   private _scanDebug = '';
 
   constructor(
-    private getConfig: () => { scanInterval: number; modelPricing: Record<string, ModelPricing> }
+    private getConfig: () => { scanInterval: number }
   ) {}
 
   start(): void {
@@ -141,8 +141,9 @@ export class ClaudeUsageService {
   }
 
   private computeUsage(): ClaudeUsageData {
-    const pricing = this.getConfig().modelPricing || {};
+    // Default pricing for internal cost calculation (not displayed in UI)
     const defaultPricing: ModelPricing = { inputPerMTok: 3.0, cacheHitPerMTok: 0.025, cacheCreatePerMTok: 3.0, outputPerMTok: 6.0 };
+    const pricing: Record<string, ModelPricing> = {};
 
     const modelMap = new Map<string, { stats: TokenStats; count: number }>();
     const sessionMap = new Map<string, SessionUsage>();
@@ -350,6 +351,7 @@ export class ClaudeUsageService {
       ' assistantMsgs=' + assistantMessages +
       ' models=' + modelUsage.length +
       ' sessions=' + sessionMap.size +
+      ' projects=' + projectMap.size +
       ' days=' + dailyStats.length;
 
     return {

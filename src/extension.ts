@@ -3,7 +3,6 @@ import { BalanceService } from './balanceService';
 import { HistoryStore } from './historyStore';
 import { BalancePanelProvider } from './webviewProvider';
 import { ClaudeUsageService } from './claudeUsageService';
-import * as fs from 'fs';
 
 const LOG = (msg: string) => console.log('[DeepSeek Balance] ' + msg);
 
@@ -25,22 +24,12 @@ export function activate(context: vscode.ExtensionContext) {
 
   const balanceService = new BalanceService(historyStore, getConfig);
 
-  function getPricingConfig(): Record<string, import('./types').ModelPricing> {
-    const cfg = vscode.workspace.getConfiguration('deepseek-balance');
-    return cfg.get<Record<string, import('./types').ModelPricing>>('modelPricing', {
-      'deepseek-v4-pro': { inputPerMTok: 3.0, cacheHitPerMTok: 0.025, cacheCreatePerMTok: 3.0, outputPerMTok: 6.0 },
-      'deepseek-v4-flash': { inputPerMTok: 1.0, cacheHitPerMTok: 0.02, cacheCreatePerMTok: 1.0, outputPerMTok: 2.0 },
-    });
-  }
-
   const claudeUsageService = new ClaudeUsageService(() => ({
     scanInterval: vscode.workspace.getConfiguration('deepseek-balance').get<number>('claudeScanInterval', 10),
-    modelPricing: getPricingConfig(),
   }));
 
   claudeUsageService.onDidUpdate((data) => {
-    LOG('Claude usage updated: cost=' + data.totalCost.toFixed(2) + ' tokens=' + data.tokenStats.inputTokens);
-    panelProvider.setClaudeRefreshing(false);
+    LOG('Claude usage updated: tokens=' + (data.tokenStats.inputTokens + data.tokenStats.outputTokens + data.tokenStats.cacheReadTokens));
     panelProvider.updateClaudeUsage(data);
   });
 
@@ -87,7 +76,7 @@ export function activate(context: vscode.ExtensionContext) {
         LOG('Config changed, scheduling restart...');
         if (configTimer) {clearTimeout(configTimer);}
         configTimer = setTimeout(() => {
-          LOG('Restarting balance service...');
+          LOG('Restarting services...');
           balanceService.restart();
           claudeUsageService.restart();
         }, 1000);
@@ -95,7 +84,7 @@ export function activate(context: vscode.ExtensionContext) {
     })
   );
 
-  // Refresh command
+  // Refresh command — refreshes both balance and Claude usage
   context.subscriptions.push(
     vscode.commands.registerCommand('deepseek-balance.refresh', async () => {
       LOG('Manual refresh triggered');
@@ -106,44 +95,8 @@ export function activate(context: vscode.ExtensionContext) {
     })
   );
 
-  // Claude refresh command
-  context.subscriptions.push(
-    vscode.commands.registerCommand('deepseek-balance.claudeRefresh', async () => {
-      LOG('Manual Claude scan triggered');
-      panelProvider.setClaudeRefreshing(true);
-      const ran = await claudeUsageService.scan(true);
-      if (!ran) {
-        panelProvider.setClaudeRefreshing(false);
-        vscode.window.showInformationMessage('Scan is already in progress, please wait.');
-      }
-    })
-  );
-
-  // Export CSV command
-  context.subscriptions.push(
-    vscode.commands.registerCommand('deepseek-balance.exportCSV', async () => {
-      const data = panelProvider.getClaudeData();
-      if (!data) {
-        vscode.window.showWarningMessage('No Claude usage data to export yet.');
-        return;
-      }
-      const uri = await vscode.window.showSaveDialog({
-        defaultUri: vscode.Uri.file('claude-usage.csv'),
-        filters: { 'CSV': ['csv'], 'All Files': ['*'] },
-      });
-      if (!uri) { return; }
-      const lines = ['date,tokens,cost,calls'];
-      for (const d of data.dailyStats) {
-        const total = d.tokenStats.inputTokens + d.tokenStats.outputTokens + d.tokenStats.cacheReadTokens;
-        lines.push(`${d.date},${total},${d.cost.toFixed(4)},${d.callCount}`);
-      }
-      fs.writeFileSync(uri.fsPath, lines.join('\n'), 'utf-8');
-      vscode.window.showInformationMessage('Exported to ' + uri.fsPath);
-    })
-  );
-
   // Start polling
-  LOG('Starting balance service...');
+  LOG('Starting services...');
   balanceService.start();
   claudeUsageService.start();
 

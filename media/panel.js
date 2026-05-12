@@ -302,7 +302,16 @@ function drawClaudeTrend(dailyStats) {
 function drawModelPie(modelUsage) {
   var container = el('pieChartContainer');
   var canvas = el('modelPieChart');
-  if (!canvas || !container || modelUsage.length === 0) { return; }
+  if (!canvas || !container || modelUsage.length === 0) {
+    if (container) { container.style.display = 'none'; }
+    return;
+  }
+  // Hide if only 1 model — meaningless pie chart
+  if (modelUsage.length <= 1) {
+    if (container) { container.style.display = 'none'; }
+    return;
+  }
+  if (container) { container.style.display = 'block'; }
 
   var dpr = window.devicePixelRatio || 1;
   var rect = container.getBoundingClientRect();
@@ -397,14 +406,6 @@ window.addEventListener('message', function (event) {
       btn.disabled = isRefreshing;
       btn.style.opacity = isRefreshing ? '0.6' : '1';
     }
-  } else if (msg.command === 'claudeRefreshing') {
-    debugLog('claudeRefreshing: active=' + msg.active);
-    const btn = el('claudeRefreshBtn');
-    if (btn) {
-      btn.textContent = msg.active ? '⟳ Scanning...' : '⟳ Scan Local Data';
-      btn.disabled = msg.active;
-      btn.style.opacity = msg.active ? '0.6' : '1';
-    }
   } else if (msg.command === 'refreshHint') {
     var hint = document.getElementById('refreshHint');
     if (hint) {
@@ -422,24 +423,6 @@ window.addEventListener('message', function (event) {
 el('refreshBtn').addEventListener('click', function () {
   vscode.postMessage({ command: 'refresh' });
 });
-
-// Claude refresh button
-var claudeBtn = el('claudeRefreshBtn');
-debugLog('claudeRefreshBtn found: ' + !!claudeBtn);
-if (claudeBtn) {
-  claudeBtn.addEventListener('click', function () {
-    debugLog('claudeRefreshBtn clicked, posting claudeRefresh');
-    vscode.postMessage({ command: 'claudeRefresh' });
-  });
-}
-
-// Export button
-var exportBtn = el('exportBtn');
-if (exportBtn) {
-  exportBtn.addEventListener('click', function () {
-    vscode.postMessage({ command: 'exportCSV' });
-  });
-}
 
 // Signal ready
 vscode.postMessage({ command: 'ready' });
