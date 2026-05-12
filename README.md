@@ -11,7 +11,7 @@ VS Code extension to monitor your [DeepSeek](https://platform.deepseek.com/) API
 
 ## Installation
 
-1. Download the latest `.vsix` file from [Releases](https://github.com/YOUR_USERNAME/deepseek-balance-monitor/releases)
+1. Download the latest `.vsix` file from [Releases](https://github.com/huihuihenqiang/deepseek-balance-monitor/releases)
 2. In VS Code: `Ctrl+Shift+P` → `Extensions: Install from VSIX...`
 3. Select the downloaded `.vsix` file
 4. Reload VS Code
