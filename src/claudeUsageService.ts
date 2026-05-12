@@ -119,6 +119,8 @@ export class ClaudeUsageService {
     let globalStats: TokenStats = { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheCreateTokens: 0 };
     let callCount = 0;
 
+    const sessionMessages = new Map<string, any[]>();
+
     for (const [, messages] of this.parsedMessages) {
       for (const msg of messages) {
         if (msg.type !== 'assistant' || !msg.usage) { continue; }
@@ -143,6 +145,12 @@ export class ClaudeUsageService {
 
         // Per session
         const sid = msg.sessionId || 'unknown';
+
+        // Group messages by sessionId for per-session model usage later
+        let smsgs = sessionMessages.get(sid);
+        if (!smsgs) { smsgs = []; sessionMessages.set(sid, smsgs); }
+        smsgs.push(msg);
+
         let ss = sessionMap.get(sid);
         if (!ss) {
           ss = {
@@ -221,7 +229,7 @@ export class ClaudeUsageService {
     const sessions: SessionUsage[] = [];
     for (const [, s] of sessionMap) {
       const smModels = new Map<string, { stats: TokenStats; count: number }>();
-      for (const msg of (this.parsedMessages.get(s.sessionId) || [])) {
+      for (const msg of (sessionMessages.get(s.sessionId) || [])) {
         if (msg.type !== 'assistant' || !msg.usage) { continue; }
         const model = msg.model || 'unknown';
         let sm = smModels.get(model);
