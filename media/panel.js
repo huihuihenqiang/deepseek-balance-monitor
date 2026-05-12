@@ -437,7 +437,7 @@ window.addEventListener('message', function (event) {
       setTimeout(function () { hint.classList.remove('visible'); }, 3000);
     }
   } else if (msg.command === 'claudeUpdate') {
-    debugLog('claudeUpdate received: cost=' + msg.data.totalCost + ' calls=' + msg.data.callCount + ' models=' + msg.data.modelUsage.length);
+    debugLog('claudeUpdate received: cost=' + msg.data.totalCost + ' calls=' + msg.data.callCount + ' models=' + msg.data.modelUsage.length + (msg.data.debugInfo ? ' | ' + msg.data.debugInfo : ''));
     renderClaudeModule(msg.data, msg.timestamp || Date.now());
   }
 });

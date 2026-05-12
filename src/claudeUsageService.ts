@@ -31,6 +31,7 @@ export class ClaudeUsageService {
   private lastOffsets: Map<string, number> = new Map();
   private parsedMessages: Map<string, any[]> = new Map(); // sessionId -> messages
   private isScanning = false;
+  private _scanDebug = '';
 
   constructor(
     private getConfig: () => { scanInterval: number; modelPricing: Record<string, ModelPricing> }
@@ -68,9 +69,11 @@ export class ClaudeUsageService {
       }
 
       const projectsDir = path.join(os.homedir(), '.claude', 'projects');
-      console.log('[DeepSeek Balance] scan: projectsDir=' + projectsDir + ' exists=' + fs.existsSync(projectsDir));
+      this._scanDebug = 'dir=' + projectsDir + ' exists=' + fs.existsSync(projectsDir);
+      console.log('[DeepSeek Balance] scan: ' + this._scanDebug);
       if (!fs.existsSync(projectsDir)) {
         const data = this.computeUsage();
+        data.debugInfo = this._scanDebug + ' (DIR_NOT_FOUND)';
         this._onDidUpdate.fire(data);
         return true;
       }
@@ -80,11 +83,14 @@ export class ClaudeUsageService {
         return fs.statSync(full).isDirectory();
       });
 
+      this._scanDebug += ' | projectDirs=' + projectDirs.length;
       console.log('[DeepSeek Balance] scan: found ' + projectDirs.length + ' project dirs');
 
+      let totalFiles = 0;
       for (const dir of projectDirs) {
         const projectPath = path.join(projectsDir, dir);
         const files = fs.readdirSync(projectPath).filter(f => f.endsWith('.jsonl'));
+        totalFiles += files.length;
         console.log('[DeepSeek Balance] scan: dir=' + dir + ' files=' + files.length);
         for (const file of files) {
           const filePath = path.join(projectPath, file);
@@ -99,7 +105,9 @@ export class ClaudeUsageService {
         }
       }
 
+      this._scanDebug += ' | jsonlFiles=' + totalFiles;
       const data = this.computeUsage();
+      data.debugInfo = this._scanDebug + ' | ' + (data.debugInfo || '');
       this._onDidUpdate.fire(data);
       return true;
     } finally {
@@ -300,6 +308,13 @@ export class ClaudeUsageService {
     const daysCovered = dailyStats.length || 1;
     const projectedMonthlyCost = (totalCost / daysCovered) * 30;
 
+    const debugInfo = 'entries=' + this.parsedMessages.size +
+      ' totalMsgs=' + totalMessages +
+      ' assistantMsgs=' + assistantMessages +
+      ' models=' + modelUsage.length +
+      ' sessions=' + sessionMap.size +
+      ' days=' + dailyStats.length;
+
     return {
       tokenStats: globalStats,
       totalCost,
@@ -309,6 +324,7 @@ export class ClaudeUsageService {
       dailyStats,
       topSessions,
       projectedMonthlyCost,
+      debugInfo,
     };
   }
 }

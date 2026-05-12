@@ -68,6 +68,7 @@ export interface ClaudeUsageData {
   dailyStats: DailyStats[];
   topSessions: SessionUsage[];
   projectedMonthlyCost: number;
+  debugInfo?: string; // diagnostic info from scan
 }
 
 export interface RefreshHint {
