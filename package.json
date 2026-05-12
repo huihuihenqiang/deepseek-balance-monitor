@@ -44,6 +44,29 @@
             "Always show USD"
           ],
           "description": "Preferred currency to display"
+        },
+        "deepseek-balance.modelPricing": {
+          "type": "object",
+          "default": {
+            "deepseek-v4-pro": {
+              "inputPerMTok": 3.0,
+              "cacheHitPerMTok": 0.025,
+              "outputPerMTok": 6.0
+            },
+            "deepseek-v4-flash": {
+              "inputPerMTok": 1.0,
+              "cacheHitPerMTok": 0.02,
+              "outputPerMTok": 2.0
+            }
+          },
+          "description": "Per-model pricing for cost calculation (CNY per million tokens)"
+        },
+        "deepseek-balance.claudeScanInterval": {
+          "type": "number",
+          "default": 10,
+          "minimum": 5,
+          "maximum": 120,
+          "description": "Claude Code local JSONL scan interval in minutes"
         }
       }
     },
@@ -69,6 +92,14 @@
       {
         "command": "deepseek-balance.refresh",
         "title": "Refresh Balance"
+      },
+      {
+        "command": "deepseek-balance.claudeRefresh",
+        "title": "Refresh Claude Code Usage"
+      },
+      {
+        "command": "deepseek-balance.exportCSV",
+        "title": "Export Usage CSV"
       }
     ]
   },
