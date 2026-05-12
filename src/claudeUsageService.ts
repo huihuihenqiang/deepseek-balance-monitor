@@ -53,13 +53,26 @@ export class ClaudeUsageService {
     this.start();
   }
 
-  /** Public for manual refresh */
-  async scan(): Promise<void> {
-    if (this.isScanning) { return; }
+  /**
+   * Scan local JSONL files and compute usage.
+   * @param forceFull — if true, clear all cached data and re-read every file from scratch
+   * @returns true if scan executed, false if skipped (already scanning)
+   */
+  async scan(forceFull = false): Promise<boolean> {
+    if (this.isScanning) { return false; }
     this.isScanning = true;
     try {
+      if (forceFull) {
+        this.lastOffsets.clear();
+        this.parsedMessages.clear();
+      }
+
       const projectsDir = path.join(os.homedir(), '.claude', 'projects');
-      if (!fs.existsSync(projectsDir)) { return; }
+      if (!fs.existsSync(projectsDir)) {
+        const data = this.computeUsage();
+        this._onDidUpdate.fire(data);
+        return true;
+      }
 
       const projectDirs = fs.readdirSync(projectsDir).filter(d => {
         const full = path.join(projectsDir, d);
@@ -73,21 +86,18 @@ export class ClaudeUsageService {
           const filePath = path.join(projectPath, file);
           const key = filePath;
           const lastOffset = this.lastOffsets.get(key) || 0;
-          // Full read if no offset; otherwise only re-read if file grew
           if (lastOffset > 0) {
-            // Incremental: read from lastOffset
             await this.readLines(filePath, lastOffset, key, dir);
           } else {
-            // Full read
             await this.readLines(filePath, 0, key, dir);
           }
-          // Record current file size as offset for next scan
           this.lastOffsets.set(key, fs.statSync(filePath).size);
         }
       }
 
       const data = this.computeUsage();
       this._onDidUpdate.fire(data);
+      return true;
     } finally {
       this.isScanning = false;
     }

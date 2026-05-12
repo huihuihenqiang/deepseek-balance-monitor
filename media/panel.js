@@ -400,6 +400,13 @@ window.addEventListener('message', function (event) {
       btn.disabled = isRefreshing;
       btn.style.opacity = isRefreshing ? '0.6' : '1';
     }
+  } else if (msg.command === 'claudeRefreshing') {
+    const btn = el('claudeRefreshBtn');
+    if (btn) {
+      btn.textContent = msg.active ? '⟳ Scanning...' : '⟳ Scan Local Data';
+      btn.disabled = msg.active;
+      btn.style.opacity = msg.active ? '0.6' : '1';
+    }
   } else if (msg.command === 'refreshHint') {
     var hint = document.getElementById('refreshHint');
     if (hint) {

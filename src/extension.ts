@@ -40,6 +40,7 @@ export function activate(context: vscode.ExtensionContext) {
 
   claudeUsageService.onDidUpdate((data) => {
     LOG('Claude usage updated: cost=' + data.totalCost.toFixed(2) + ' tokens=' + data.tokenStats.inputTokens);
+    panelProvider.setClaudeRefreshing(false);
     panelProvider.updateClaudeUsage(data);
   });
 
@@ -100,7 +101,7 @@ export function activate(context: vscode.ExtensionContext) {
       LOG('Manual refresh triggered');
       panelProvider.setRefreshing(true);
       await balanceService.fetchManual();
-      await claudeUsageService.scan();
+      await claudeUsageService.scan(true);
       panelProvider.setRefreshing(false);
     })
   );
@@ -109,7 +110,12 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(
     vscode.commands.registerCommand('deepseek-balance.claudeRefresh', async () => {
       LOG('Manual Claude scan triggered');
-      await claudeUsageService.scan();
+      panelProvider.setClaudeRefreshing(true);
+      const ran = await claudeUsageService.scan(true);
+      if (!ran) {
+        panelProvider.setClaudeRefreshing(false);
+        vscode.window.showInformationMessage('Scan is already in progress, please wait.');
+      }
     })
   );
 
