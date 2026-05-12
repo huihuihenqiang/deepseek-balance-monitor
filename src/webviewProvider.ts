@@ -36,6 +36,7 @@ export class BalancePanelProvider implements vscode.WebviewViewProvider {
         LOG('Webview requested refresh');
         vscode.commands.executeCommand('deepseek-balance.refresh');
       } else if (msg.command === 'claudeRefresh') {
+        LOG('Webview requested Claude refresh');
         vscode.commands.executeCommand('deepseek-balance.claudeRefresh');
       } else if (msg.command === 'exportCSV') {
         vscode.commands.executeCommand('deepseek-balance.exportCSV');

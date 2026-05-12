@@ -68,6 +68,7 @@ export class ClaudeUsageService {
       }
 
       const projectsDir = path.join(os.homedir(), '.claude', 'projects');
+      console.log('[DeepSeek Balance] scan: projectsDir=' + projectsDir + ' exists=' + fs.existsSync(projectsDir));
       if (!fs.existsSync(projectsDir)) {
         const data = this.computeUsage();
         this._onDidUpdate.fire(data);
@@ -79,9 +80,12 @@ export class ClaudeUsageService {
         return fs.statSync(full).isDirectory();
       });
 
+      console.log('[DeepSeek Balance] scan: found ' + projectDirs.length + ' project dirs');
+
       for (const dir of projectDirs) {
         const projectPath = path.join(projectsDir, dir);
         const files = fs.readdirSync(projectPath).filter(f => f.endsWith('.jsonl'));
+        console.log('[DeepSeek Balance] scan: dir=' + dir + ' files=' + files.length);
         for (const file of files) {
           const filePath = path.join(projectPath, file);
           const key = filePath;
@@ -137,6 +141,18 @@ export class ClaudeUsageService {
     const dailyMap = new Map<string, { stats: TokenStats; count: number; models: Record<string, TokenStats> }>();
     let globalStats: TokenStats = { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheCreateTokens: 0 };
     let callCount = 0;
+
+    // DEBUG: log what we're working with
+    let totalMessages = 0;
+    let assistantMessages = 0;
+    for (const [, messages] of this.parsedMessages) {
+      totalMessages += messages.length;
+      for (const msg of messages) {
+        if (msg.type === 'assistant' && msg.usage) { assistantMessages++; }
+      }
+    }
+    console.log('[DeepSeek Balance] computeUsage: parsedMessages entries=' + this.parsedMessages.size +
+      ' totalMessages=' + totalMessages + ' assistantMsgs=' + assistantMessages);
 
     const sessionMessages = new Map<string, any[]>();
 

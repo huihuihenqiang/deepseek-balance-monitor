@@ -174,7 +174,14 @@ function drawChart(snapshots) {
 }
 
 function renderClaudeModule(data, scannedAt) {
-  if (!el('claudeTokens')) { return; }
+  console.log('[panel] renderClaudeModule called, tokens=' +
+    (data.tokenStats ? data.tokenStats.inputTokens : 'N/A') +
+    ' totalCost=' + data.totalCost + ' callCount=' + data.callCount);
+
+  if (!el('claudeTokens')) {
+    console.log('[panel] ERROR: claudeTokens element not found in DOM!');
+    return;
+  }
   var totalTok = data.tokenStats.inputTokens + data.tokenStats.outputTokens + data.tokenStats.cacheReadTokens;
   el('claudeTokens').textContent = fmtNum(totalTok);
   el('claudeCost').textContent = '¥' + data.totalCost.toFixed(2);
@@ -187,7 +194,9 @@ function renderClaudeModule(data, scannedAt) {
   renderTopSessions(data.topSessions);
 
   if (el('claudeUpdatedAt')) {
-    el('claudeUpdatedAt').textContent = 'last scanned ' + formatUpdatedAt(scannedAt || Date.now());
+    var models = data.modelUsage.map(function(m) { return m.model; }).join(', ');
+    el('claudeUpdatedAt').textContent = 'last scanned ' + formatUpdatedAt(scannedAt || Date.now()) +
+      ' | ' + data.callCount + ' calls, models: ' + (models || 'none');
   }
 }
 
@@ -401,6 +410,7 @@ window.addEventListener('message', function (event) {
       btn.style.opacity = isRefreshing ? '0.6' : '1';
     }
   } else if (msg.command === 'claudeRefreshing') {
+    console.log('[panel] claudeRefreshing: active=' + msg.active);
     const btn = el('claudeRefreshBtn');
     if (btn) {
       btn.textContent = msg.active ? '⟳ Scanning...' : '⟳ Scan Local Data';
@@ -415,6 +425,7 @@ window.addEventListener('message', function (event) {
       setTimeout(function () { hint.classList.remove('visible'); }, 3000);
     }
   } else if (msg.command === 'claudeUpdate') {
+    console.log('[panel] claudeUpdate received: cost=' + msg.data.totalCost + ' calls=' + msg.data.callCount + ' models=' + msg.data.modelUsage.length);
     renderClaudeModule(msg.data, msg.timestamp || Date.now());
   }
 });
@@ -426,8 +437,10 @@ el('refreshBtn').addEventListener('click', function () {
 
 // Claude refresh button
 var claudeBtn = el('claudeRefreshBtn');
+console.log('[panel] claudeRefreshBtn found: ' + !!claudeBtn);
 if (claudeBtn) {
   claudeBtn.addEventListener('click', function () {
+    console.log('[panel] claudeRefreshBtn clicked, posting claudeRefresh');
     vscode.postMessage({ command: 'claudeRefresh' });
   });
 }
