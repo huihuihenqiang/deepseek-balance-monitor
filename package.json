@@ -1,0 +1,85 @@
+{
+  "name": "deepseek-balance-monitor",
+  "displayName": "DeepSeek Balance Monitor",
+  "description": "Monitor your DeepSeek API balance in real-time",
+  "version": "0.1.0",
+  "publisher": "your-publisher-name",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "*"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "configuration": {
+      "title": "DeepSeek Balance Monitor",
+      "properties": {
+        "deepseek-balance.apiKey": {
+          "type": "string",
+          "default": "",
+          "description": "Your DeepSeek API key"
+        },
+        "deepseek-balance.refreshInterval": {
+          "type": "number",
+          "default": 30,
+          "minimum": 5,
+          "maximum": 120,
+          "description": "Auto-refresh interval in minutes"
+        },
+        "deepseek-balance.currency": {
+          "type": "string",
+          "default": "auto",
+          "enum": [
+            "auto",
+            "CNY",
+            "USD"
+          ],
+          "enumDescriptions": [
+            "Show the currency returned by the API",
+            "Always show CNY",
+            "Always show USD"
+          ],
+          "description": "Preferred currency to display"
+        }
+      }
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "deepseek-balance-sidebar",
+          "title": "DeepSeek Balance",
+          "icon": "$(graph-line)"
+        }
+      ]
+    },
+    "views": {
+      "deepseek-balance-sidebar": [
+        {
+          "type": "webview",
+          "id": "deepseek-balance.panel",
+          "name": "Balance Panel"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "deepseek-balance.refresh",
+        "title": "Refresh Balance"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "tsc -p ./",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.85.0",
+    "typescript": "^5.3.0"
+  }
+}
