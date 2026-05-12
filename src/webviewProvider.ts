@@ -7,6 +7,8 @@ export class BalancePanelProvider implements vscode.WebviewViewProvider {
   private _view: vscode.WebviewView | null = null;
   private _lastBalance: { currency: string; total: string; granted: string; toppedUp: string } | null = null;
   private _lastError: string | null = null;
+  private _lastClaudeUsage: import('./types').ClaudeUsageData | null = null;
+  private _claudeData: import('./types').ClaudeUsageData | null = null;
 
   constructor(
     private readonly extensionUri: vscode.Uri,
@@ -33,6 +35,10 @@ export class BalancePanelProvider implements vscode.WebviewViewProvider {
       if (msg.command === 'refresh') {
         LOG('Webview requested refresh');
         vscode.commands.executeCommand('deepseek-balance.refresh');
+      } else if (msg.command === 'claudeRefresh') {
+        vscode.commands.executeCommand('deepseek-balance.claudeRefresh');
+      } else if (msg.command === 'exportCSV') {
+        vscode.commands.executeCommand('deepseek-balance.exportCSV');
       } else if (msg.command === 'ready') {
         LOG('Webview ready signal received');
         if (this._lastError) {
@@ -40,6 +46,9 @@ export class BalancePanelProvider implements vscode.WebviewViewProvider {
         } else if (this._lastBalance) {
           LOG('Replaying cached balance to webview');
           this.update(this._lastBalance);
+        }
+        if (this._lastClaudeUsage) {
+          this.updateClaudeUsage(this._lastClaudeUsage);
         }
       }
     });
@@ -92,6 +101,17 @@ export class BalancePanelProvider implements vscode.WebviewViewProvider {
   showRefreshHint(): void {
     if (!this._view) { return; }
     this._view.webview.postMessage({ command: 'refreshHint', message: '余额未变化，可能官方数据未更新，请稍后再试' });
+  }
+
+  updateClaudeUsage(data: import('./types').ClaudeUsageData): void {
+    this._claudeData = data;
+    this._lastClaudeUsage = data;
+    if (!this._view) { return; }
+    this._view.webview.postMessage({ command: 'claudeUpdate', data });
+  }
+
+  getClaudeData(): import('./types').ClaudeUsageData | null {
+    return this._claudeData;
   }
 
   private getHtml(webview: vscode.Webview): string {
