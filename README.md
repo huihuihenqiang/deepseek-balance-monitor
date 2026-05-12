@@ -15,12 +15,18 @@
 ## 功能
 
 ### DeepSeek 余额面板
+
+![DeepSeek 余额面板](image/1.png)
+
 - 实时显示当前余额（赠送余额 / 充值余额分开）
 - 7 天余额趋势图
 - 1h / 24h / 7d 消耗统计
 - 余额未变化时的智能提示（官方数据可能有延迟）
 
 ### Claude Code 用量面板
+
+![Claude Code 用量面板](image/2.png)
+
 - **Token 总量** — 输入 / 输出 / Cache 分项统计
 - **调用次数** — 你调了多少次 API
 - **Cache 命中率** — Prompt Caching 省了多少 Token 一目了然
@@ -32,7 +38,10 @@
 ## 安装
 
 1. 从 [Releases](https://github.com/huihuihenqiang/deepseek-balance-monitor/releases) 下载最新 `.vsix` 文件
-2. 打开 VS Code → `Ctrl+Shift+P` → 输入 `vsix` → 选择 `Extensions: Install from VSIX...`
+2. 打开 VS Code → `Ctrl+Shift+P` → 搜索 `Extensions` → 选择 `Extensions: Install from VSIX...`
+
+![安装](image/安装.png)
+
 3. 选择下载的 `.vsix` 文件
 4. 重载 VS Code
 
