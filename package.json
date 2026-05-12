@@ -28,7 +28,7 @@
           "default": 30,
           "minimum": 5,
           "maximum": 120,
-          "description": "Auto-refresh interval in minutes"
+          "description": "Auto-refresh interval in minutes (for both balance and usage)"
         },
         "deepseek-balance.currency": {
           "type": "string",
@@ -44,13 +44,6 @@
             "Always show USD"
           ],
           "description": "Preferred currency to display"
-        },
-        "deepseek-balance.claudeScanInterval": {
-          "type": "number",
-          "default": 10,
-          "minimum": 5,
-          "maximum": 120,
-          "description": "Claude Code local JSONL scan interval in minutes"
         }
       }
     },

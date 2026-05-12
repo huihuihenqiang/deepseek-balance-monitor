@@ -25,7 +25,7 @@ export function activate(context: vscode.ExtensionContext) {
   const balanceService = new BalanceService(historyStore, getConfig);
 
   const claudeUsageService = new ClaudeUsageService(() => ({
-    scanInterval: vscode.workspace.getConfiguration('deepseek-balance').get<number>('claudeScanInterval', 10),
+    scanInterval: vscode.workspace.getConfiguration('deepseek-balance').get<number>('refreshInterval', 30),
   }));
 
   claudeUsageService.onDidUpdate((data) => {

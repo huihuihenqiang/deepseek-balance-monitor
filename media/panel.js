@@ -12,7 +12,6 @@ function debugLog(msg) {
   if (_debugLines.length > 20) { _debugLines.shift(); }
   var div = el('claudeDebug');
   if (div) {
-    div.style.display = 'block';
     div.textContent = _debugLines.join('\n');
   }
 }
@@ -264,12 +263,12 @@ function drawClaudeTrend(dailyStats) {
 
   // Draw bars
   var barCount = dailyStats.length;
-  var barGap = 4;
-  var barW = Math.max(4, (plotW / barCount) - barGap);
+  var slotW = plotW / barCount;
+  var barW = Math.max(2, slotW * 0.5);
 
   for (var j = 0; j < barCount; j++) {
     var barH = plotH * tokenValues[j] / maxToken;
-    var x = M.left + j * (plotW / barCount) + barGap / 2;
+    var x = M.left + j * slotW + (slotW - barW) / 2;
     var y = M.top + plotH - barH;
 
     ctx.fillStyle = '#4fc3f7';
@@ -285,7 +284,7 @@ function drawClaudeTrend(dailyStats) {
   var labelStep = barCount <= 7 ? 1 : Math.ceil(barCount / 7);
   for (var j = 0; j < barCount; j += labelStep) {
     var label = dailyStats[j].date.slice(5); // MM-DD
-    var x = M.left + j * (plotW / barCount) + barGap / 2 + barW / 2;
+    var x = M.left + j * slotW + slotW / 2;
     ctx.save();
     ctx.translate(x, M.top + plotH + 4);
     if (barCount > 7) {
@@ -302,15 +301,7 @@ function drawClaudeTrend(dailyStats) {
 function drawModelPie(modelUsage) {
   var container = el('pieChartContainer');
   var canvas = el('modelPieChart');
-  if (!canvas || !container || modelUsage.length === 0) {
-    if (container) { container.style.display = 'none'; }
-    return;
-  }
-  // Hide if only 1 model — meaningless pie chart
-  if (modelUsage.length <= 1) {
-    if (container) { container.style.display = 'none'; }
-    return;
-  }
+  if (!canvas || !container || modelUsage.length === 0) { return; }
   if (container) { container.style.display = 'block'; }
 
   var dpr = window.devicePixelRatio || 1;
@@ -374,6 +365,13 @@ function escapeHtml(s) {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
+function decodeProjectName(dir) {
+  // Claude Code encodes project dirs as <drive><dashes><name>
+  // e.g. "d----------chajian" → "chajian"
+  var m = dir.match(/^[A-Za-z]-+(.+)$/);
+  return m ? m[1] : dir;
+}
+
 function renderTopProjects(projects) {
   var list = el('topSessionsList');
   if (!list) { return; }
@@ -381,10 +379,9 @@ function renderTopProjects(projects) {
   for (var i = 0; i < Math.min(projects.length, 5); i++) {
     var p = projects[i];
     var tokens = p.tokenStats.inputTokens + p.tokenStats.outputTokens + p.tokenStats.cacheReadTokens;
-    var shortProject = p.projectDir;
-    if (shortProject.length > 25) { shortProject = '...' + shortProject.slice(-22); }
+    var name = decodeProjectName(p.projectDir);
     html += '<div class="session-row">' +
-      '<span>' + escapeHtml(shortProject) + ' (' + p.callCount + ' calls)</span>' +
+      '<span>' + escapeHtml(name) + ' (' + p.callCount + ' calls)</span>' +
       '<span>' + fmtNum(tokens) + ' tok</span>' +
       '</div>';
   }

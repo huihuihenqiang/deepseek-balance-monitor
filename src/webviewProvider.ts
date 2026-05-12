@@ -352,7 +352,7 @@ export class BalancePanelProvider implements vscode.WebviewViewProvider {
     <span class="last-updated" id="claudeUpdatedAt"></span>
   </div>
 
-  <div id="claudeDebug" style="margin-top:8px;padding:6px;background:var(--vscode-inputValidation-infoBackground);border:1px solid var(--vscode-inputValidation-infoBorder);font-size:11px;font-family:monospace;white-space:pre-wrap;"></div>
+  <div id="claudeDebug" style="display:none;margin-top:8px;padding:6px;background:var(--vscode-inputValidation-infoBackground);border:1px solid var(--vscode-inputValidation-infoBorder);font-size:11px;font-family:monospace;white-space:pre-wrap;"></div>
 
   <script src="${panelJsUri}"></script>
 </body>
