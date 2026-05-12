@@ -360,7 +360,7 @@ export class ClaudeUsageService {
     const debugInfo = 'entries=' + this.parsedMessages.size +
       ' totalMsgs=' + totalMessages +
       ' assistantMsgs=' + assistantMessages +
-      ' models=' + modelUsage.length +
+      ' models=' + modelUsage.length + '(' + modelUsage.map(m => m.model).join(',') + ')' +
       ' sessions=' + sessionMap.size +
       ' projects=' + projectMap.size +
       ' days=' + dailyStats.length;

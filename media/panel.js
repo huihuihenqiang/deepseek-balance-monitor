@@ -380,7 +380,7 @@ function renderTopProjects(projects) {
     var tokens = p.tokenStats.inputTokens + p.tokenStats.outputTokens + p.tokenStats.cacheReadTokens;
     var name = decodeProjectName(p.projectDir);
     html += '<div class="session-row">' +
-      '<span>' + escapeHtml(name) + ' (' + p.callCount + ' calls)</span>' +
+      '<span>#' + (i + 1) + ' ' + escapeHtml(name) + ' (' + p.callCount + ' calls)</span>' +
       '<span>' + fmtNum(tokens) + ' tok</span>' +
       '</div>';
   }
