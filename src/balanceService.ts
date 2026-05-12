@@ -9,6 +9,7 @@ export class BalanceService {
     balance: BalanceInfo;
     previousBalance: BalanceInfo | null;
     error?: string;
+    balanceUnchanged?: boolean;
   }>();
   readonly onDidUpdate = this._onDidUpdate.event;
 
@@ -42,7 +43,7 @@ export class BalanceService {
     this.timer = setInterval(() => this.fetch(), interval);
   }
 
-  async fetch(): Promise<void> {
+  private async _fetch(checkUnchanged: boolean): Promise<void> {
     if (this.isFetching) {
       return;
     }
@@ -71,7 +72,12 @@ export class BalanceService {
       const snapshot: Snapshot = { ...balance, timestamp: Date.now() };
       this.historyStore.addSnapshot(snapshot);
 
-      this._onDidUpdate.fire({ balance, previousBalance: this.lastBalance });
+      const unchanged = checkUnchanged &&
+        this.lastBalance !== null &&
+        this.lastBalance.totalBalance === balance.totalBalance &&
+        this.lastBalance.currency === balance.currency;
+
+      this._onDidUpdate.fire({ balance, previousBalance: this.lastBalance, balanceUnchanged: unchanged });
       this.lastBalance = balance;
     } catch (err: any) {
       const error = err.statusCode === 401 ? 'invalid-key' : String(err.message || err);
@@ -83,6 +89,14 @@ export class BalanceService {
     } finally {
       this.isFetching = false;
     }
+  }
+
+  async fetch(): Promise<void> {
+    return this._fetch(false);
+  }
+
+  async fetchManual(): Promise<void> {
+    return this._fetch(true);
   }
 
   private httpGet(apiKey: string): Promise<BalanceResponse> {

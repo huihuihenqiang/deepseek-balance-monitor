@@ -89,6 +89,11 @@ export class BalancePanelProvider implements vscode.WebviewViewProvider {
     this._view.webview.postMessage({ command: 'refreshing', active });
   }
 
+  showRefreshHint(): void {
+    if (!this._view) { return; }
+    this._view.webview.postMessage({ command: 'refreshHint', message: '余额未变化，可能官方数据未更新，请稍后再试' });
+  }
+
   private getHtml(webview: vscode.Webview): string {
     const panelJsUri = webview.asWebviewUri(
       vscode.Uri.joinPath(this.extensionUri, 'media', 'panel.js')

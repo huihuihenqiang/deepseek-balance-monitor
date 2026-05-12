@@ -33,7 +33,7 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.window.registerWebviewViewProvider('deepseek-balance.panel', panelProvider)
   );
 
-  balanceService.onDidUpdate(({ balance, error }) => {
+  balanceService.onDidUpdate(({ balance, error, balanceUnchanged }) => {
     LOG('Balance update: error=' + (error || 'none') + ' balance=' + (balance.totalBalance || 'none'));
     if (error === 'no-api-key') {
       panelProvider.showError('Please set your DeepSeek API key in settings.');
@@ -53,6 +53,9 @@ export function activate(context: vscode.ExtensionContext) {
       granted: balance.grantedBalance,
       toppedUp: balance.toppedUpBalance,
     });
+    if (balanceUnchanged) {
+      panelProvider.showRefreshHint();
+    }
   });
 
   // Config change handler — debounced
@@ -75,7 +78,7 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand('deepseek-balance.refresh', async () => {
       LOG('Manual refresh triggered');
       panelProvider.setRefreshing(true);
-      await balanceService.fetch();
+      await balanceService.fetchManual();
       panelProvider.setRefreshing(false);
     })
   );
