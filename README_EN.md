@@ -15,12 +15,18 @@ When using Claude Code with DeepSeek API, you face two pain points:
 ## Features
 
 ### DeepSeek Balance Panel
+
+![DeepSeek Balance Panel](image/1.png)
+
 - Real-time balance display (topped-up vs. granted breakdown)
 - 7-day balance trend chart
 - 1h / 24h / 7d consumption stats
 - Smart hint when balance hasn't changed (API update may be delayed)
 
 ### Claude Code Usage Panel
+
+![Claude Code Usage Panel](image/2.png)
+
 - **Total Tokens** — input / output / cache breakdown
 - **API Call Count** — how many times you've hit the API
 - **Cache Hit Rate** — see how much Prompt Caching saves you
@@ -32,7 +38,10 @@ When using Claude Code with DeepSeek API, you face two pain points:
 ## Installation
 
 1. Download the latest `.vsix` from [Releases](https://github.com/huihuihenqiang/deepseek-balance-monitor/releases)
-2. In VS Code: `Ctrl+Shift+P` → type `vsix` → `Extensions: Install from VSIX...`
+2. In VS Code: `Ctrl+Shift+P` → search `Extensions` → `Extensions: Install from VSIX...`
+
+![Install](image/安装.png)
+
 3. Select the downloaded `.vsix` file
 4. Reload VS Code
 

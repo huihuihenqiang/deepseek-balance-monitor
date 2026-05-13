@@ -313,6 +313,9 @@ export class BalancePanelProvider implements vscode.WebviewViewProvider {
   <div class="section-divider"></div>
   <div class="section-title">Claude Code Usage</div>
 
+  <div id="claudeEmptyHint" style="color:var(--vscode-descriptionForeground);font-size:12px;text-align:center;padding:20px;">Click ⟳ Refresh to scan local usage data</div>
+
+  <div id="claudeDataSection" style="display:none;">
   <div class="overview-grid">
     <div class="ov-item">
       <div class="ov-label">Total Tokens</div>
@@ -351,6 +354,7 @@ export class BalancePanelProvider implements vscode.WebviewViewProvider {
   <div class="claude-actions">
     <span class="last-updated" id="claudeUpdatedAt"></span>
   </div>
+  </div><!-- claudeDataSection -->
 
   <div id="claudeDebug" style="display:none;margin-top:8px;padding:6px;background:var(--vscode-inputValidation-infoBackground);border:1px solid var(--vscode-inputValidation-infoBorder);font-size:11px;font-family:monospace;white-space:pre-wrap;"></div>
 

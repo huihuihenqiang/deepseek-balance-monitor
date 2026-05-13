@@ -193,6 +193,12 @@ function renderClaudeModule(data, scannedAt) {
     debugLog('ERROR: claudeTokens element not found in DOM!');
     return;
   }
+
+  // Show data section, hide empty hint
+  var hint = el('claudeEmptyHint');
+  if (hint) { hint.style.display = 'none'; }
+  var section = el('claudeDataSection');
+  if (section) { section.style.display = ''; }
   var totalTok = data.tokenStats.inputTokens + data.tokenStats.outputTokens + data.tokenStats.cacheReadTokens;
   el('claudeTokens').textContent = fmtNum(totalTok);
   el('claudeCalls').textContent = fmtNum(data.callCount);
