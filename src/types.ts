@@ -64,6 +64,7 @@ export interface ProjectUsage {
   tokenStats: TokenStats;
   callCount: number;
   messageCount: number;
+  projectPath?: string; // actual filesystem path, if found
 }
 
 export interface ClaudeUsageData {
@@ -73,11 +74,33 @@ export interface ClaudeUsageData {
   cacheHitRate: number;
   modelUsage: ModelUsage[];
   dailyStats: DailyStats[];
+  todayHourly: HourlyStats[];
+  yesterdayHourly: HourlyStats[];
+  todayCallDetails: TodayCallDetail[];
   topSessions: SessionUsage[];
   topProjects: ProjectUsage[];
   projectedMonthlyCost: number;
   projectedMonthlyTokens: number;
-  debugInfo?: string; // diagnostic info from scan
+  debugInfo?: string;
+}
+
+export interface HourlyStats {
+  hour: number; // 0-23
+  tokens: number;
+  calls: number;
+  cacheHitRate: number;
+}
+
+export interface TodayCallDetail {
+  time: string; // "15:32"
+  projectName: string;
+  model: string;
+  inputTokens: number;
+  outputTokens: number;
+  cacheReadTokens: number;
+  cacheCreateTokens: number;
+  totalTokens: number;
+  cacheHitRate: number;
 }
 
 export interface RefreshHint {

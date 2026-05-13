@@ -1,80 +1,107 @@
-# AI Usage Monitor
 
-> 🎯 专为 **Claude Code + DeepSeek API** 组合打造的用量监控插件，无需打开网页，直接在 VS Code 侧边栏实时掌握余额和 Token 消耗。
 
-[English](README_EN.md)
+<h1 align="center">AI Usage Monitor</h1>
 
-## 为什么你需要它
+<p align="center">
+  <a href="https://github.com/huihuihenqiang/deepseek-balance-monitor/stargazers"><img src="https://img.shields.io/github/stars/huihuihenqiang/deepseek-balance-monitor?style=flat-square" alt="GitHub stars"></a>
+  <a href="https://github.com/huihuihenqiang/deepseek-balance-monitor/blob/main/LICENSE"><img src="https://img.shields.io/github/license/huihuihenqiang/deepseek-balance-monitor?style=flat-square" alt="License"></a>
+  <a href="#"><img src="https://img.shields.io/badge/platform-VS%20Code%201.85%2B-blue?style=flat-square" alt="Platform"></a>
+</p>
 
-使用 Claude Code 配置 DeepSeek API 后，有两个痛点：
-- 想知道余额还剩多少 → 必须打开浏览器登录 DeepSeek 平台
-- 想知道用了多少 Token → 无处可查，只能看月底账单
+<p align="center">
+  <b>DeepSeek 余额 + Claude Code Token 消耗 · VS Code 侧边栏一站式监控</b>
+</p>
 
-**本插件一次性解决：余额 + Token 消耗，全在 VS Code 里看。**
+<p align="center">
+  <a href="https://github.com/huihuihenqiang/deepseek-balance-monitor/releases"><img src="https://img.shields.io/badge/Download-0.3.0-brightgreen?style=for-the-badge" alt="Download"></a>
+</p>
 
-## 功能
+---
+
+## Why
+
+使用 Claude Code + DeepSeek API 后有两个痛点：
+
+- 想知道余额还剩多少 → 必须打开浏览器登录 DeepSeek
+- 想知道 Token 用在哪、哪个项目花最多 → 无处可查
+
+**本插件在 VS Code 侧边栏一次性解决。**
+
+## Features
 
 ### DeepSeek 余额面板
 
-![DeepSeek 余额面板](image/1.png)
+![DeepSeek Balance Panel](image/1.png)
 
-- 实时显示当前余额（赠送余额 / 充值余额分开）
-- 7 天余额趋势图
+- 实时余额显示，低于阈值自动变红
+- 预计可用天数（余额 ÷ 近7日均消耗）
+- 7 天余额趋势（hover 看具体数值）
 - 1h / 24h / 7d 消耗统计
-- 余额未变化时的智能提示（官方数据可能有延迟）
 
-### Claude Code 用量面板
+### Claude Code 用量面板 — 四个 Tab
 
-![Claude Code 用量面板](image/2.png)
+![Claude Code Usage Panel](image/2.png)
 
-- **Token 总量** — 输入 / 输出 / Cache 分项统计
-- **调用次数** — 你调了多少次 API
-- **Cache 命中率** — Prompt Caching 省了多少 Token 一目了然
-- **柱状图** — 7 天 Token 消耗趋势
-- **模型分布饼图** — 各个模型各用了多少 Token
-- **项目排行** — 哪个项目最吃 Token，一看便知
-- **月度预测** — 基于加权历史数据的智能预测，预估本月 Token 消耗
+**Today** — 今天有没有异常？
+- 每小时 Token 柱状图 + 昨日同时段对比线
+- 每小时调用次数图
+- Token Composition 堆叠条（Input / Output / Cache Read / Cache Write）
+- 今日指标：Avg Tokens/Call、vs 7d Avg、Total Calls
 
-## 安装
+**This Week** — 这周和上周比怎么样？
+- 每日柱状图（周一~周日） + 上周同日对比
+- Week-over-Week 对比表（Tokens / Calls / Avg/Call / Cache Hit）
+- 本周预测总量
 
-1. 从 [Releases](https://github.com/huihuihenqiang/deepseek-balance-monitor/releases) 下载最新 `.vsix` 文件
-2. 打开 VS Code → `Ctrl+Shift+P` → 搜索 `Extensions` → 选择 `Extensions: Install from VSIX...`
+**This Month** — 这个月会不会爆？
+- 每日 Token 柱状图 + 累计 & 预测折线图
+- 日历热力图（一眼看出哪天最重）
+- Export Monthly Report → Markdown 报告一键导出
 
-![安装](image/安装.png)
+**Cumulative** — 钱都花哪了？
+- 月度对比柱状图
+- Cache Hit Rate 趋势（85%-100% 纵轴）
+- 模型分布饼图 + 项目排行（可点击打开文件夹）
+- 总览指标：项目数 / 首次记录 / 月均 / 峰值月
 
-3. 选择下载的 `.vsix` 文件
-4. 重载 VS Code
+## Install
 
-## 配置
+1. 从 [Releases](https://github.com/huihuihenqiang/deepseek-balance-monitor/releases) 下载 `.vsix`
+2. VS Code → `Ctrl+Shift+P` → `Extensions: Install from VSIX...`
+
+![Install](image/安装.png)
+
+3. 选择文件 → 重载
+
+## Configure
 
 `Ctrl+,` → 搜索 `deepseek`：
 
-| 配置项 | 默认值 | 说明 |
-|--------|--------|------|
-| `Api Key` | （空） | 你的 DeepSeek API key，在 [这里](https://platform.deepseek.com/api_keys) 创建 |
-| `Refresh Interval` | `30` | 自动刷新间隔（分钟），范围 5-120 |
-| `Currency` | `auto` | 币种：`CNY` / `USD` / `auto` |
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `Api Key` | — | DeepSeek API key |
+| `Refresh Interval` | 30 | 刷新间隔（分钟） |
+| `Currency` | auto | CNY / USD / auto |
+| `Low Balance Threshold` | 5 | 余额低于此值变红 |
+| `Low Days Threshold` | 5 | 剩余天数低于此值变红 |
 
-## 使用
 
-1. 设置 API Key 后，点击左侧活动栏的 📈 **AI Usage** 图标
-2. 上半部分是 DeepSeek 余额，下半部分是 Claude Code 用量
-3. 点 `⟳ Refresh` 手动刷新（同时更新余额和用量）
-4. 用量数据自动从 `~/.claude/projects/` 下的本地会话日志中提取，**无需额外配置**
+## Topics
 
-## 隐私
+`claude-code` `claude` `ai-tools` `usage-dashboard` `token-usage` `developer-tools` `api-monitoring` `cost-monitoring`
 
-- API Key 仅存储在本地 VS Code 设置中，只发送到 `api.deepseek.com`
-- 只调用 `GET /user/balance` 接口，不读写任何其他数据
-- Claude Code 会话数据仅在本地读取，**不上传任何内容**
-- 无遥测、无追踪、无第三方服务
+## Privacy
 
-## 从源码构建
+- API Key 仅存本地，只发 `api.deepseek.com`
+- 会话数据仅本地读取，零上传
+- 无遥测、无追踪
+
+## Build
 
 ```bash
 npm install
 npm run compile
-npx vsce package --allow-star-activation --allow-missing-repository
+npx vsce package --allow-star-activation
 ```
 
 ## License

@@ -79,6 +79,12 @@ export function activate(context: vscode.ExtensionContext) {
           LOG('Restarting services...');
           balanceService.restart();
           claudeUsageService.restart();
+          // Send updated config to webview
+          const cfg = vscode.workspace.getConfiguration('deepseek-balance');
+          panelProvider.postConfig({
+            lowBalanceThreshold: cfg.get<number>('lowBalanceThreshold', 5),
+            lowDaysThreshold: cfg.get<number>('lowDaysThreshold', 5),
+          });
         }, 1000);
       }
     })

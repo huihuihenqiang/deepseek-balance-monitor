@@ -5,7 +5,7 @@ import * as os from 'os';
 import * as readline from 'readline';
 import {
   TokenStats, ModelPricing, ModelUsage, SessionUsage,
-  DailyStats, ClaudeUsageData, ProjectUsage
+  DailyStats, ClaudeUsageData, ProjectUsage, HourlyStats, TodayCallDetail
 } from './types';
 
 function sumStats(stats: TokenStats[]): TokenStats {
@@ -20,7 +20,10 @@ function sumStats(stats: TokenStats[]): TokenStats {
 }
 
 function formatDate(ts: number): string {
-  return new Date(ts).toISOString().slice(0, 10);
+  const d = new Date(ts);
+  return d.getFullYear() + '-' +
+    String(d.getMonth() + 1).padStart(2, '0') + '-' +
+    String(d.getDate()).padStart(2, '0');
 }
 
 export class ClaudeUsageService {
@@ -30,6 +33,7 @@ export class ClaudeUsageService {
   private timer: NodeJS.Timeout | null = null;
   private lastOffsets: Map<string, number> = new Map();
   private parsedMessages: Map<string, any[]> = new Map(); // sessionId -> messages
+  private projectPaths: Map<string, string> = new Map(); // encoded dir -> actual path
   private isScanning = false;
   private _scanDebug = '';
 
@@ -130,6 +134,10 @@ export class ClaudeUsageService {
           const obj = JSON.parse(line);
           obj._projectDir = projectDir;
           messages.push(obj);
+          // Extract actual project path if available
+          if (!this.projectPaths.has(projectDir) && obj.cwd) {
+            this.projectPaths.set(projectDir, obj.cwd);
+          }
         } catch { /* skip malformed lines */ }
       });
       rl.on('close', () => {
@@ -149,6 +157,11 @@ export class ClaudeUsageService {
     const sessionMap = new Map<string, SessionUsage>();
     const projectMap = new Map<string, { stats: TokenStats; callCount: number; messageCount: number }>();
     const dailyMap = new Map<string, { stats: TokenStats; count: number; models: Record<string, TokenStats> }>();
+    const todayHourlyMap = new Map<number, { tokens: number; calls: number; inputTokens: number; cacheReadTokens: number }>();
+    const yesterdayHourlyMap = new Map<number, { tokens: number; calls: number; inputTokens: number; cacheReadTokens: number }>();
+    const todayCallList: TodayCallDetail[] = [];
+    const todayStr = formatDate(Date.now());
+    const yesterdayStr = formatDate(Date.now() - 86400000);
     let globalStats: TokenStats = { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheCreateTokens: 0 };
     let callCount = 0;
 
@@ -174,6 +187,8 @@ export class ClaudeUsageService {
         if (!m || m.role !== 'assistant' || !m.usage) { continue; }
         const usage = m.usage;
         const model = m.model || 'unknown';
+        const ts = new Date(msg.timestamp).getTime();
+        if (!Number.isFinite(ts)) { continue; }
         callCount++;
 
         // Accumulate global
@@ -218,8 +233,8 @@ export class ClaudeUsageService {
             tokenStats: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheCreateTokens: 0 },
             modelUsage: [],
             messageCount: 0,
-            startedAt: new Date(msg.timestamp).getTime(),
-            lastActiveAt: new Date(msg.timestamp).getTime(),
+            startedAt: ts,
+            lastActiveAt: ts,
           };
           sessionMap.set(sid, ss);
         }
@@ -228,12 +243,11 @@ export class ClaudeUsageService {
         ss.tokenStats.cacheReadTokens += usage.cache_read_input_tokens || 0;
         ss.tokenStats.cacheCreateTokens += usage.cache_creation_input_tokens || 0;
         ss.messageCount++;
-        const ts = new Date(msg.timestamp).getTime();
         if (ts < ss.startedAt) { ss.startedAt = ts; }
         if (ts > ss.lastActiveAt) { ss.lastActiveAt = ts; }
 
         // Per day
-        const date = formatDate(new Date(msg.timestamp).getTime());
+        const date = formatDate(ts);
         let dd = dailyMap.get(date);
         if (!dd) { dd = { stats: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheCreateTokens: 0 }, count: 0, models: {} }; dailyMap.set(date, dd); }
         dd.stats.inputTokens += usage.input_tokens || 0;
@@ -246,6 +260,40 @@ export class ClaudeUsageService {
         dd.models[model].outputTokens += usage.output_tokens || 0;
         dd.models[model].cacheReadTokens += usage.cache_read_input_tokens || 0;
         dd.models[model].cacheCreateTokens += usage.cache_creation_input_tokens || 0;
+
+        // Per hour and per-call tracking (for today tab)
+        const hour = new Date(ts).getHours();
+        const totalToks = (usage.input_tokens || 0) + (usage.output_tokens || 0) + (usage.cache_read_input_tokens || 0);
+        if (date === todayStr) {
+          let hh = todayHourlyMap.get(hour);
+          if (!hh) { hh = { tokens: 0, calls: 0, inputTokens: 0, cacheReadTokens: 0 }; todayHourlyMap.set(hour, hh); }
+          hh.tokens += totalToks;
+          hh.calls++;
+          hh.inputTokens += usage.input_tokens || 0;
+          hh.cacheReadTokens += usage.cache_read_input_tokens || 0;
+
+          const totalInput = (usage.input_tokens || 0) + (usage.cache_read_input_tokens || 0);
+          const projMatch = projDir.match(/^[A-Za-z]-+(.+)$/);
+          todayCallList.push({
+            time: String(new Date(ts).getHours()).padStart(2, '0') + ':' + String(new Date(ts).getMinutes()).padStart(2, '0'),
+            projectName: projMatch ? projMatch[1] : projDir,
+            model: model,
+            inputTokens: usage.input_tokens || 0,
+            outputTokens: usage.output_tokens || 0,
+            cacheReadTokens: usage.cache_read_input_tokens || 0,
+            cacheCreateTokens: usage.cache_creation_input_tokens || 0,
+            totalTokens: totalToks,
+            cacheHitRate: totalInput > 0 ? (usage.cache_read_input_tokens || 0) / totalInput : 0,
+          });
+        }
+        if (date === yesterdayStr) {
+          let yh = yesterdayHourlyMap.get(hour);
+          if (!yh) { yh = { tokens: 0, calls: 0, inputTokens: 0, cacheReadTokens: 0 }; yesterdayHourlyMap.set(hour, yh); }
+          yh.tokens += totalToks;
+          yh.calls++;
+          yh.inputTokens += usage.input_tokens || 0;
+          yh.cacheReadTokens += usage.cache_read_input_tokens || 0;
+        }
       }
     }
 
@@ -327,14 +375,38 @@ export class ClaudeUsageService {
     });
     const topSessions = sessions.slice(0, 5);
 
-    // Projected monthly cost
-    const daysCovered = dailyStats.length || 1;
-    const projectedMonthlyCost = (totalCost / daysCovered) * 30;
+    const now = new Date();
+    const monthKey = formatDate(now.getTime()).slice(0, 7);
+    const daysInCurrentMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    const minutesIntoDay = now.getHours() * 60 + now.getMinutes() + now.getSeconds() / 60;
+    const dayFraction = Math.max(0.25, Math.min(1, minutesIntoDay / 1440));
+    const elapsedMonthDays = Math.min(daysInCurrentMonth, (now.getDate() - 1) + dayFraction);
+
+    let monthToDateCost = 0;
+    let monthToDateTokens = 0;
+    for (const d of dailyStats) {
+      if (!d.date.startsWith(monthKey)) { continue; }
+      monthToDateCost += d.cost;
+      monthToDateTokens += d.tokenStats.inputTokens + d.tokenStats.outputTokens + d.tokenStats.cacheReadTokens;
+    }
+
+    const projectedMonthlyCost = elapsedMonthDays > 0
+      ? (monthToDateCost / elapsedMonthDays) * daysInCurrentMonth
+      : 0;
+    const projectedMonthlyTokens = elapsedMonthDays > 0
+      ? (monthToDateTokens / elapsedMonthDays) * daysInCurrentMonth
+      : 0;
 
     // Project-based ranking (by total tokens)
     const topProjects: ProjectUsage[] = [];
     for (const [projDir, p] of projectMap) {
-      topProjects.push({ projectDir: projDir, tokenStats: p.stats, callCount: p.callCount, messageCount: p.messageCount });
+      topProjects.push({
+        projectDir: projDir,
+        tokenStats: p.stats,
+        callCount: p.callCount,
+        messageCount: p.messageCount,
+        projectPath: this.projectPaths.get(projDir),
+      });
     }
     topProjects.sort((a, b) => {
       const aTotal = a.tokenStats.inputTokens + a.tokenStats.outputTokens + a.tokenStats.cacheReadTokens;
@@ -342,20 +414,35 @@ export class ClaudeUsageService {
       return bTotal - aTotal;
     });
 
-    // Project monthly tokens
-    // Weighted daily prediction: recent days count more (exponential decay factor 0.9)
-    const totalTokens = globalStats.inputTokens + globalStats.outputTokens + globalStats.cacheReadTokens;
-    let weightedDaily = 0;
-    let weightSum = 0;
-    let w = 1.0;
-    for (let i = dailyStats.length - 1; i >= 0; i--) {
-      const dayTokens = dailyStats[i].tokenStats.inputTokens + dailyStats[i].tokenStats.outputTokens + dailyStats[i].tokenStats.cacheReadTokens;
-      weightedDaily += dayTokens * w;
-      weightSum += w;
-      w *= 0.85; // each older day counts 85% as much
+    // Today hourly breakdown
+    const todayHourly: HourlyStats[] = [];
+    for (let h = 0; h < 24; h++) {
+      const hh = todayHourlyMap.get(h);
+      const totalInput = (hh ? hh.inputTokens : 0) + (hh ? hh.cacheReadTokens : 0);
+      todayHourly.push({
+        hour: h,
+        tokens: hh ? hh.tokens : 0,
+        calls: hh ? hh.calls : 0,
+        cacheHitRate: totalInput > 0 ? (hh ? hh.cacheReadTokens : 0) / totalInput : 0,
+      });
     }
-    const avgDaily = weightSum > 0 ? weightedDaily / weightSum : (totalTokens / daysCovered);
-    const projectedMonthlyTokens = avgDaily * 30;
+
+    // Yesterday hourly breakdown
+    const yesterdayHourly: HourlyStats[] = [];
+    for (let h = 0; h < 24; h++) {
+      const yh = yesterdayHourlyMap.get(h);
+      const totalInput = (yh ? yh.inputTokens : 0) + (yh ? yh.cacheReadTokens : 0);
+      yesterdayHourly.push({
+        hour: h,
+        tokens: yh ? yh.tokens : 0,
+        calls: yh ? yh.calls : 0,
+        cacheHitRate: totalInput > 0 ? (yh ? yh.cacheReadTokens : 0) / totalInput : 0,
+      });
+    }
+
+    // Top 10 heaviest calls today
+    todayCallList.sort((a, b) => b.totalTokens - a.totalTokens);
+    const todayCallDetails = todayCallList.slice(0, 10);
 
     const debugInfo = 'entries=' + this.parsedMessages.size +
       ' totalMsgs=' + totalMessages +
@@ -372,6 +459,9 @@ export class ClaudeUsageService {
       cacheHitRate: Math.round(cacheHitRate * 10000) / 10000,
       modelUsage,
       dailyStats,
+      todayHourly,
+      yesterdayHourly,
+      todayCallDetails,
       topSessions,
       topProjects,
       projectedMonthlyCost,

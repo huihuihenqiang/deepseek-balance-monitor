@@ -2,7 +2,7 @@
   "name": "deepseek-balance-monitor",
   "displayName": "AI Usage Monitor",
   "description": "Monitor DeepSeek API balance and Claude Code token usage",
-  "version": "0.2.0",
+  "version": "0.3.1",
   "publisher": "your-publisher-name",
   "repository": {
     "type": "git",
@@ -48,6 +48,20 @@
             "Always show USD"
           ],
           "description": "Preferred currency to display"
+        },
+        "deepseek-balance.lowBalanceThreshold": {
+          "type": "number",
+          "default": 5,
+          "minimum": 0,
+          "maximum": 1000,
+          "description": "Balance below this amount (in your currency) will be shown in red"
+        },
+        "deepseek-balance.lowDaysThreshold": {
+          "type": "number",
+          "default": 5,
+          "minimum": 1,
+          "maximum": 90,
+          "description": "Estimated days remaining below this number will be shown in red"
         }
       }
     },
