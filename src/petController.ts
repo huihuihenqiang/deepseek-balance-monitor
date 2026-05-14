@@ -133,6 +133,10 @@ export class PetController implements vscode.Disposable {
   }
 
   async toggle(): Promise<void> {
+    if (this.status.status === 'downloading') {
+      vscode.window.showInformationMessage('AI Usage Pet: 正在下载运行环境，请稍候...');
+      return;
+    }
     await this.setEnabled(!this.getConfig().enabled);
   }
 
@@ -285,7 +289,14 @@ export class PetController implements vscode.Disposable {
     this.expectedStop = false;
     this.setStatus({ enabled: true, status: 'starting', message: 'Starting pet...' });
     try {
-      const electronPath = await this.resolveElectronExecutable();
+      const cached = this.resolveCachedElectronExecutable();
+      let electronPath: string;
+      if (cached) {
+        electronPath = cached;
+      } else {
+        this.setStatus({ enabled: true, status: 'downloading', message: '正在下载桌面宠物运行环境（首次使用需下载约 100MB，仅此一次）...' });
+        electronPath = await this.downloadElectronRuntime();
+      }
       const asset = await this.resolvePetAsset();
       this.asset = asset;
       await this.startServer();
@@ -441,9 +452,12 @@ export class PetController implements vscode.Disposable {
     const storageRoot = path.join(this.context.globalStorageUri.fsPath, 'runtime');
     const tempRoot = path.join(storageRoot, 'tmp');
     const archivePath = path.join(tempRoot, archiveName);
-    const extractRoot = runtimeRoot + '.partial';
+    const extractRoot = runtimeRoot + '.partial-' + crypto.randomBytes(4).toString('hex');
     fs.mkdirSync(tempRoot, { recursive: true });
-    fs.rmSync(extractRoot, { recursive: true, force: true });
+
+    // Clean up any stale partial directories from previous interrupted downloads
+    this.cleanupPartialDirs(path.dirname(runtimeRoot));
+
     fs.mkdirSync(extractRoot, { recursive: true });
     LOG('Downloading Electron runtime: ' + archiveName);
     try {
@@ -454,13 +468,14 @@ export class PetController implements vscode.Disposable {
       fs.renameSync(extractRoot, runtimeRoot);
       fs.rmSync(archivePath, { force: true });
     } catch (err) {
-      fs.rmSync(extractRoot, { recursive: true, force: true });
-      fs.rmSync(archivePath, { force: true });
-      throw err;
+      try { fs.rmSync(extractRoot, { recursive: true, force: true }); } catch { /* ignore */ }
+      try { fs.rmSync(archivePath, { force: true }); } catch { /* ignore */ }
+      const message = err instanceof Error ? err.message : String(err);
+      throw new Error('下载运行环境失败：' + message + '。请检查网络连接后重试。');
     }
 
     if (!fs.existsSync(executablePath)) {
-      throw new Error('Electron runtime downloaded but executable was not found at ' + executablePath);
+      throw new Error('下载完成但未找到可执行文件，请重试。');
     }
     return executablePath;
   }
@@ -485,6 +500,18 @@ export class PetController implements vscode.Disposable {
   private getRuntimeRoot(version: string): string {
     const platformArch = process.platform + '-' + process.arch;
     return path.join(this.context.globalStorageUri.fsPath, 'runtime', platformArch, 'electron-v' + version);
+  }
+
+  private cleanupPartialDirs(parentDir: string): void {
+    if (!fs.existsSync(parentDir)) { return; }
+    let entries: fs.Dirent[] = [];
+    try { entries = fs.readdirSync(parentDir, { withFileTypes: true }); } catch { return; }
+    for (const entry of entries) {
+      if (entry.isDirectory() && entry.name.startsWith('electron-v') && entry.name.includes('.partial')) {
+        const dirPath = path.join(parentDir, entry.name);
+        try { fs.rmSync(dirPath, { recursive: true, force: true }); } catch { /* locked by another process, will try again next time */ }
+      }
+    }
   }
 
   private getRuntimeExecutable(runtimeRoot: string): string {
@@ -1028,9 +1055,7 @@ export class PetController implements vscode.Disposable {
         return compact.length > 40 ? compact.slice(0, 40) : compact;
       }
     }
-    return mode === 'chat'
-      ? 'I missed that. Try again?'
-      : 'I am watching today tokens.';
+    throw new Error('模型返回了空消息，请稍后重试');
   }
 
   private logModelReply(mode: 'chat' | 'proactive', reply: string): void {

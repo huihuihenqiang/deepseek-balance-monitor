@@ -205,6 +205,6 @@ export interface PetChatSession {
 
 export interface PetRuntimeStatus {
   enabled: boolean;
-  status: 'stopped' | 'starting' | 'running' | 'error';
+  status: 'stopped' | 'starting' | 'downloading' | 'running' | 'error';
   message: string;
 }

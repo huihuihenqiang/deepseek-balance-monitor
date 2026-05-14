@@ -65,15 +65,28 @@ function updatePetStatus(status) {
   var btn = el('petBtn');
   var label = el('petBtnLabel');
   if (!btn || !label || !status) { return; }
-  var visualStatus = status.status === 'starting' ? 'running' : status.status;
+  var visualStatus;
+  if (status.status === 'starting') {
+    visualStatus = 'running';
+  } else if (status.status === 'downloading') {
+    visualStatus = 'downloading';
+  } else {
+    visualStatus = status.status;
+  }
   btn.className = 'refresh-btn pet-btn ' + visualStatus;
   if (status.status === 'running' || status.status === 'starting') {
     label.textContent = 'Pet On';
+  } else if (status.status === 'downloading') {
+    label.textContent = '下载中...';
+    btn.disabled = true;
+    btn.title = status.message || '正在下载运行环境，请稍候...';
+    return;
   } else if (status.status === 'error') {
     label.textContent = 'Pet Err';
   } else {
     label.textContent = 'Pet';
   }
+  btn.disabled = false;
   btn.title = status.message || 'Toggle floating token pet';
 }
 

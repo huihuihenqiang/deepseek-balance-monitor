@@ -19,7 +19,7 @@
     idle: { row: 0, frames: [{ c: 0, d: 1680 }, { c: 1, d: 660 }, { c: 2, d: 660 }, { c: 3, d: 840 }, { c: 4, d: 840 }, { c: 5, d: 1920 }] },
     'running-right': { row: 1, count: 8, dur: 120, last: 220 },
     'running-left': { row: 2, count: 8, dur: 120, last: 220 },
-    waving: { row: 3, count: 4, dur: 140, last: 280, loops: 2 },
+    waving: { row: 3, count: 4, dur: 140, last: 280, loops: 1 },
     jumping: { row: 4, count: 5, dur: 140, last: 280 },
     failed: { row: 5, count: 8, dur: 140, last: 240 },
     waiting: { row: 6, count: 6, dur: 150, last: 260 },

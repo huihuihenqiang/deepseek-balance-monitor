@@ -209,6 +209,15 @@ export class BalancePanelProvider implements vscode.WebviewViewProvider {
       border-color: var(--vscode-errorForeground);
       color: var(--vscode-errorForeground);
     }
+    .pet-btn.downloading {
+      border-color: var(--vscode-focusBorder);
+      cursor: wait;
+      animation: pet-download-pulse 1.2s ease-in-out infinite;
+    }
+    @keyframes pet-download-pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.6; }
+    }
     .pet-dot {
       width: 7px;
       height: 7px;
@@ -219,6 +228,7 @@ export class BalancePanelProvider implements vscode.WebviewViewProvider {
     .pet-btn.running .pet-dot { background: #81c784; }
     .pet-btn.error .pet-dot { background: var(--vscode-errorForeground); }
     .pet-btn.starting .pet-dot { background: #81c784; }
+    .pet-btn.downloading .pet-dot { background: var(--vscode-focusBorder); }
     .pet-menu-wrap {
       position: relative;
     }
