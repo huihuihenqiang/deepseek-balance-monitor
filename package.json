@@ -2,7 +2,7 @@
   "name": "deepseek-balance-monitor",
   "displayName": "AI Usage Monitor",
   "description": "Monitor DeepSeek API balance and Claude Code token usage",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "publisher": "your-publisher-name",
   "repository": {
     "type": "git",
@@ -62,6 +62,56 @@
           "minimum": 1,
           "maximum": 90,
           "description": "Estimated days remaining below this number will be shown in red"
+        },
+        "deepseek-balance.petEnabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Start the floating token pet when the extension activates"
+        },
+        "deepseek-balance.petSlug": {
+          "type": "string",
+          "default": "anya-2",
+          "description": "Petdex pet slug to display"
+        },
+        "deepseek-balance.petChatBaseUrl": {
+          "type": "string",
+          "default": "https://api.deepseek.com/v1",
+          "description": "OpenAI-compatible base URL for pet chat"
+        },
+        "deepseek-balance.petChatModel": {
+          "type": "string",
+          "default": "deepseek-v4-flash",
+          "description": "Model used by the floating pet chat"
+        },
+        "deepseek-balance.petLongPressUrl": {
+          "type": "string",
+          "default": "https://www.bilibili.com",
+          "description": "URL opened when long-pressing the pet for 3 seconds"
+        },
+        "deepseek-balance.monthlyTokenBudget": {
+          "type": "number",
+          "default": 0,
+          "minimum": 0,
+          "description": "Monthly token budget for pet warnings. Set to 0 to disable budget alerts"
+        },
+        "deepseek-balance.petProactiveChatEnabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Allow the floating pet to proactively say a short line from time to time"
+        },
+        "deepseek-balance.petProactiveChatMinMinutes": {
+          "type": "number",
+          "default": 8,
+          "minimum": 1,
+          "maximum": 180,
+          "description": "Minimum minutes before a proactive pet line may appear"
+        },
+        "deepseek-balance.petProactiveChatMaxMinutes": {
+          "type": "number",
+          "default": 18,
+          "minimum": 1,
+          "maximum": 180,
+          "description": "Maximum minutes before a proactive pet line may appear"
         }
       }
     },
@@ -87,6 +137,26 @@
       {
         "command": "deepseek-balance.refresh",
         "title": "Refresh All"
+      },
+      {
+        "command": "deepseek-balance.pet.toggle",
+        "title": "Toggle Floating Pet"
+      },
+      {
+        "command": "deepseek-balance.pet.show",
+        "title": "Show Floating Pet"
+      },
+      {
+        "command": "deepseek-balance.pet.hide",
+        "title": "Hide Floating Pet"
+      },
+      {
+        "command": "deepseek-balance.pet.select",
+        "title": "Select Floating Pet"
+      },
+      {
+        "command": "deepseek-balance.pet.importLocal",
+        "title": "Import Local Pet"
       }
     ]
   },
@@ -99,5 +169,8 @@
     "@types/node": "^20.0.0",
     "@types/vscode": "^1.85.0",
     "typescript": "^5.3.0"
+  },
+  "dependencies": {
+    "electron": "^42.0.1"
   }
 }

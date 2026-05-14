@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="content-security-policy" content="default-src 'self' http://127.0.0.1:*; img-src 'self' http://127.0.0.1:* data:; style-src 'unsafe-inline' 'self'; script-src 'self'; connect-src http://127.0.0.1:*;">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Usage Pet</title>
+  <style>
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: transparent;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      user-select: none;
+    }
+    #root {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-end;
+      padding: 6px 10px 8px;
+      pointer-events: none;
+    }
+    #bubble {
+      max-width: 288px;
+      min-height: 0;
+      margin-bottom: 0;
+      padding: 0 11px;
+      border-radius: 10px;
+      color: #111;
+      background: rgba(255,255,255,0.96);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.28);
+      font-size: 12px;
+      font-weight: 650;
+      line-height: 1.35;
+      text-align: left;
+      word-break: break-word;
+      opacity: 0;
+      transform: translateY(4px);
+      transition: opacity 160ms ease, transform 160ms ease;
+    }
+    #bubble.visible {
+      min-height: 30px;
+      margin-bottom: 3px;
+      padding: 8px 11px;
+      opacity: 1;
+      transform: translateY(0);
+    }
+    #bubble.ok { border-left: 4px solid #42a35a; }
+    #bubble.warning { border-left: 4px solid #d9a441; }
+    #bubble.danger { border-left: 4px solid #df5b57; }
+    #chatPanel {
+      width: 250px;
+      margin-bottom: 0;
+      padding: 8px;
+      border: 1px solid rgba(255,255,255,0.14);
+      border-radius: 8px;
+      background: rgba(22,22,25,0.94);
+      color: #f2f2f2;
+      box-shadow: 0 14px 42px rgba(0,0,0,0.35);
+      pointer-events: auto;
+      display: none;
+    }
+    #chatPanel.open { display: block; }
+    #chatForm {
+      display: flex;
+      gap: 6px;
+    }
+    #chatInput {
+      flex: 1;
+      min-width: 0;
+      height: 28px;
+      border-radius: 6px;
+      border: 1px solid rgba(255,255,255,0.16);
+      background: rgba(255,255,255,0.08);
+      color: #fff;
+      padding: 0 8px;
+      outline: none;
+      font-size: 12px;
+    }
+    #sendBtn, #chatToggle {
+      border: 0;
+      border-radius: 6px;
+      background: #4f8cff;
+      color: #fff;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 650;
+    }
+    #sendBtn {
+      width: 52px;
+      height: 28px;
+    }
+    #sendBtn:disabled {
+      opacity: 0.55;
+      cursor: default;
+    }
+    #petStage {
+      position: relative;
+      width: 176px;
+      height: 152px;
+      pointer-events: auto;
+      cursor: grab;
+      touch-action: none;
+    }
+    #petStage.dragging { cursor: grabbing; }
+    #pet {
+      position: absolute;
+      left: 32px;
+      bottom: 2px;
+      width: 112px;
+      aspect-ratio: 192 / 208;
+      image-rendering: pixelated;
+      background-repeat: no-repeat;
+      background-size: 800% 900%;
+      background-position: 0% 0%;
+      filter: drop-shadow(0 10px 10px rgba(0,0,0,0.32));
+    }
+    #chatToggle {
+      position: absolute;
+      left: 145px;
+      top: 40px;
+      width: 44px;
+      height: 24px;
+      background: rgba(30,30,34,0.82);
+      border: 1px solid rgba(255,255,255,0.12);
+      color: #f8f8f8;
+      box-shadow: 0 5px 18px rgba(0,0,0,0.25);
+    }
+  </style>
+</head>
+<body>
+  <div id="root">
+    <div id="chatPanel">
+      <form id="chatForm">
+        <input id="chatInput" autocomplete="off" placeholder="Say something">
+        <button id="sendBtn" type="submit">Send</button>
+      </form>
+    </div>
+    <div id="bubble"></div>
+    <div id="petStage">
+      <button id="chatToggle" type="button">Chat</button>
+      <div id="pet"></div>
+    </div>
+  </div>
+  <script src="./renderer.js"></script>
+</body>
+</html>

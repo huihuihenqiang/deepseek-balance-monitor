@@ -1,80 +1,103 @@
 # AI Usage Monitor
 
-> 🎯 Purpose-built for the **Claude Code + DeepSeek API** combo. Stop opening your browser to check your balance — see everything right in your VS Code sidebar.
+AI Usage Monitor is a VS Code extension for tracking DeepSeek balance, Claude Code token usage, and a draggable desktop pet that reacts to your usage.
 
-[中文](README.md)
-
-## Why You Need It
-
-When using Claude Code with DeepSeek API, you face two pain points:
-- Checking your balance → must open a browser and log into the DeepSeek dashboard
-- Tracking token usage → nowhere to look until the bill arrives
-
-**This extension solves both: balance + token consumption, all inside VS Code.**
+[中文文档](README.md)
 
 ## Features
 
-### DeepSeek Balance Panel
+- DeepSeek balance and recent spending trend
+- Claude Code daily, weekly, monthly, and cumulative token dashboard
+- Project ranking, model breakdown, cache usage, and monthly forecast
+- Markdown monthly report export
+- Floating pet with local sprites, chat, drag interactions, and token usage warnings
 
-![DeepSeek Balance Panel](image/1.png)
+## Install Latest
 
-- Real-time balance display (topped-up vs. granted breakdown)
-- 7-day balance trend chart
-- 1h / 24h / 7d consumption stats
-- Smart hint when balance hasn't changed (API update may be delayed)
+1. Download the latest `.vsix` from GitHub Releases.
+2. Open VS Code.
+3. Run `Extensions: Install from VSIX...` from the command palette.
+4. Select the downloaded VSIX and reload VS Code.
 
-### Claude Code Usage Panel
+Command-line install:
 
-![Claude Code Usage Panel](image/2.png)
+```bash
+code --install-extension deepseek-balance-monitor-0.3.2.vsix
+```
 
-- **Total Tokens** — input / output / cache breakdown
-- **API Call Count** — how many times you've hit the API
-- **Cache Hit Rate** — see how much Prompt Caching saves you
-- **Bar Chart** — 7-day token usage trend
-- **Model Distribution Pie** — which model consumes how many tokens
-- **Project Ranking** — which project eats the most tokens
-- **Monthly Forecast** — weighted prediction based on your usage patterns
+## Runtime Notes
 
-## Installation
+Users do not need Node.js, npm, Codex, or petdex.
 
-1. Download the latest `.vsix` from [Releases](https://github.com/huihuihenqiang/deepseek-balance-monitor/releases)
-2. In VS Code: `Ctrl+Shift+P` → search `Extensions` → `Extensions: Install from VSIX...`
+The floating pet uses Electron. In development, the extension uses `node_modules/electron`. In packaged VSIX builds, Electron is downloaded on the first pet launch and cached in VS Code globalStorage. After the runtime is cached, the pet window can start offline.
 
-![Install](image/安装.png)
+The VSIX includes three built-in pets:
 
-3. Select the downloaded `.vsix` file
-4. Reload VS Code
+- `anya-2`
+- `tiko`
+- `xiaoyu-3`
+
+If a selected pet slug is not found locally or in the bundled assets, the extension tries to download it from the Petdex manifest and caches it.
 
 ## Configuration
 
-`Ctrl+,` → search `deepseek`:
+Search `deepseek-balance` in VS Code settings.
 
 | Setting | Default | Description |
-|---------|---------|-------------|
-| `Api Key` | (empty) | Your [DeepSeek API key](https://platform.deepseek.com/api_keys) |
-| `Refresh Interval` | `30` | Auto-refresh interval in minutes (5-120) |
-| `Currency` | `auto` | Display currency: `CNY`, `USD`, or `auto` |
+| --- | --- | --- |
+| `deepseek-balance.apiKey` | empty | DeepSeek API key, also used by pet chat |
+| `deepseek-balance.refreshInterval` | `30` | Auto-refresh interval in minutes |
+| `deepseek-balance.currency` | `auto` | Balance display currency |
+| `deepseek-balance.petEnabled` | `false` | Start the pet when VS Code activates |
+| `deepseek-balance.petSlug` | `anya-2` | Current pet slug |
+| `deepseek-balance.petChatBaseUrl` | `https://api.deepseek.com/v1` | OpenAI-compatible chat endpoint |
+| `deepseek-balance.petChatModel` | `deepseek-v4-flash` | Pet chat model |
+| `deepseek-balance.monthlyTokenBudget` | `0` | Monthly token budget. 0 disables budget alerts |
 
-## Usage
+## Pet Assets
 
-1. After setting your API Key, click the 📈 **AI Usage** icon in the Activity Bar
-2. Top half = DeepSeek balance, bottom half = Claude Code usage
-3. Click `⟳ Refresh` to manually refresh both
-4. Usage data is extracted automatically from local session logs under `~/.claude/projects/` — no extra setup needed
+When Chat is open, the panel only shows the input box. Pet replies are shown as the pet bubble and stay visible until Chat is closed. Non-chat bubbles still use the normal 7-second lifetime.
+
+Use the sidebar gear menu and choose `Import Local Pet`, then select a folder containing:
+
+```text
+pet.json
+spritesheet.webp
+```
+
+`spritesheet.png` is also supported.
+
+Manual pet folders are also supported:
+
+```text
+~/.ai-usage-monitor/pets/<slug>
+~/.codex/pets/<slug>
+~/.petdex/pets/<slug>
+```
+
+Asset lookup priority:
+
+1. `~/.ai-usage-monitor/pets/<slug>`
+2. `~/.codex/pets/<slug>`
+3. `~/.petdex/pets/<slug>`
+4. Imported assets in VS Code globalStorage
+5. Bundled assets under `media/pets/<slug>`
+6. Download cache in VS Code globalStorage
+7. Petdex online manifest
 
 ## Privacy
 
-- Your API key is stored locally and only sent to `api.deepseek.com`
-- Only calls `GET /user/balance` — reads/writes no other data
-- Claude Code session data is read locally only — **nothing is uploaded**
-- No telemetry, no tracking, no third-party services
+- API keys are stored locally in VS Code settings.
+- Pet chat requests are sent from the extension process. The key is not exposed to the pet window.
+- Claude Code usage is read from local `.claude/projects` logs.
+- No telemetry.
 
-## Build from Source
+## Build
 
 ```bash
 npm install
 npm run compile
-npx vsce package --allow-star-activation --allow-missing-repository
+npx vsce package --allow-star-activation
 ```
 
 ## License

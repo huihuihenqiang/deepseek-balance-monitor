@@ -1,5 +1,5 @@
-import * as vscode from 'vscode';
-import { Snapshot, BalanceStats } from './types';
+﻿import * as vscode from 'vscode';
+import { Snapshot, BalanceStats, PetRuntimeStatus } from './types';
 
 const LOG = (msg: string) => console.log('[DeepSeek Balance:Panel] ' + msg);
 
@@ -8,6 +8,7 @@ export class BalancePanelProvider implements vscode.WebviewViewProvider {
   private _lastBalance: { currency: string; total: string; granted: string; toppedUp: string } | null = null;
   private _lastError: string | null = null;
   private _lastClaudeUsage: import('./types').ClaudeUsageData | null = null;
+  private _lastPetStatus: PetRuntimeStatus = { enabled: false, status: 'stopped', message: 'Pet stopped' };
 
   constructor(
     private readonly extensionUri: vscode.Uri,
@@ -43,6 +44,7 @@ export class BalancePanelProvider implements vscode.WebviewViewProvider {
           lowBalanceThreshold: cfg.get<number>('lowBalanceThreshold', 5),
           lowDaysThreshold: cfg.get<number>('lowDaysThreshold', 5),
         });
+        this.postPetStatus();
         if (this._lastError) {
           this.showError(this._lastError);
         } else if (this._lastBalance) {
@@ -67,6 +69,13 @@ export class BalancePanelProvider implements vscode.WebviewViewProvider {
             vscode.window.showInformationMessage('Monthly report copied to clipboard!');
           });
         }
+      } else if (msg.command === 'petToggle') {
+        LOG('Webview requested pet toggle');
+        vscode.commands.executeCommand('deepseek-balance.pet.toggle');
+      } else if (msg.command === 'petSelect') {
+        vscode.commands.executeCommand('deepseek-balance.pet.select');
+      } else if (msg.command === 'petImport') {
+        vscode.commands.executeCommand('deepseek-balance.pet.importLocal');
       }
     });
 
@@ -117,7 +126,7 @@ export class BalancePanelProvider implements vscode.WebviewViewProvider {
 
   showRefreshHint(): void {
     if (!this._view) { return; }
-    this._view.webview.postMessage({ command: 'refreshHint', message: '余额未变化，可能官方数据未更新，请稍后再试' });
+    this._view.webview.postMessage({ command: 'refreshHint', message: '余额暂时没变化，可能官方数据还没更新，请稍后再试。' });
   }
 
   postConfig(config: { lowBalanceThreshold: number; lowDaysThreshold: number }): void {
@@ -130,6 +139,16 @@ export class BalancePanelProvider implements vscode.WebviewViewProvider {
     this._lastClaudeUsage = data;
     if (!this._view) { return; }
     this._view.webview.postMessage({ command: 'claudeUpdate', data, timestamp: Date.now() });
+  }
+
+  setPetStatus(status: PetRuntimeStatus): void {
+    this._lastPetStatus = status;
+    this.postPetStatus();
+  }
+
+  private postPetStatus(): void {
+    if (!this._view) { return; }
+    this._view.webview.postMessage({ command: 'petStatus', status: this._lastPetStatus });
   }
 
   private getHtml(webview: vscode.Webview): string {
@@ -156,6 +175,12 @@ export class BalancePanelProvider implements vscode.WebviewViewProvider {
       justify-content: space-between;
       align-items: center;
       margin-bottom: 20px;
+      gap: 10px;
+    }
+    .header-actions {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
     }
     .refresh-btn {
       background: var(--vscode-button-background);
@@ -171,6 +196,68 @@ export class BalancePanelProvider implements vscode.WebviewViewProvider {
     }
     .refresh-btn:hover { background: var(--vscode-button-hoverBackground); }
     .refresh-btn:disabled { opacity: 0.6; cursor: default; }
+    .pet-btn {
+      background: var(--vscode-button-secondaryBackground);
+      color: var(--vscode-button-secondaryForeground);
+      border: 1px solid var(--vscode-widget-border);
+    }
+    .pet-btn:hover { background: var(--vscode-button-secondaryHoverBackground); }
+    .pet-btn.running {
+      border-color: rgba(129,199,132,0.8);
+    }
+    .pet-btn.error {
+      border-color: var(--vscode-errorForeground);
+      color: var(--vscode-errorForeground);
+    }
+    .pet-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--vscode-descriptionForeground);
+      display: inline-block;
+    }
+    .pet-btn.running .pet-dot { background: #81c784; }
+    .pet-btn.error .pet-dot { background: var(--vscode-errorForeground); }
+    .pet-btn.starting .pet-dot { background: #81c784; }
+    .pet-menu-wrap {
+      position: relative;
+    }
+    .icon-btn {
+      width: 26px;
+      height: 26px;
+      padding: 0;
+      justify-content: center;
+      font-size: 14px;
+      line-height: 1;
+    }
+    .pet-menu {
+      position: absolute;
+      top: calc(100% + 6px);
+      right: 0;
+      min-width: 146px;
+      display: none;
+      flex-direction: column;
+      padding: 4px;
+      border: 1px solid var(--vscode-widget-border);
+      border-radius: 6px;
+      background: var(--vscode-editor-background);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+      z-index: 20;
+    }
+    .pet-menu.open { display: flex; }
+    .pet-menu button {
+      border: 0;
+      background: transparent;
+      color: var(--vscode-foreground);
+      text-align: left;
+      padding: 6px 8px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    .pet-menu button:hover {
+      background: var(--vscode-list-hoverBackground);
+    }
     .spinner {
       display: none;
       width: 14px; height: 14px;
@@ -413,7 +500,17 @@ export class BalancePanelProvider implements vscode.WebviewViewProvider {
 
   <div class="header">
     <span class="last-updated" id="updatedAt">Waiting for data...</span>
-    <button class="refresh-btn" id="refreshBtn"><span class="spinner" id="refreshSpinner"></span>⟳ Refresh</button>
+    <div class="header-actions">
+      <button class="refresh-btn pet-btn" id="petBtn" title="Toggle floating token pet"><span class="pet-dot"></span><span id="petBtnLabel">Pet</span></button>
+      <button class="refresh-btn" id="refreshBtn"><span class="spinner" id="refreshSpinner"></span>Refresh</button>
+      <div class="pet-menu-wrap">
+        <button class="refresh-btn icon-btn" id="petMenuBtn" title="Pet settings" aria-label="Pet settings">&#9881;</button>
+        <div class="pet-menu" id="petMenu">
+          <button id="petSelectBtn">选择当前宠物</button>
+          <button id="petImportBtn">导入宠物</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <div class="balance-card" id="balanceCard">
@@ -457,7 +554,7 @@ export class BalancePanelProvider implements vscode.WebviewViewProvider {
   <div class="section-divider"></div>
   <div class="section-title">Claude Code Usage</div>
 
-  <div id="claudeEmptyHint" style="color:var(--vscode-descriptionForeground);font-size:12px;text-align:center;padding:20px;">Click ⟳ Refresh to scan local usage data</div>
+  <div id="claudeEmptyHint" style="color:var(--vscode-descriptionForeground);font-size:12px;text-align:center;padding:20px;">Click Refresh to scan local usage data</div>
 
   <div id="claudeDataSection" style="display:none;">
   <div class="tab-bar" id="claudeTabBar">

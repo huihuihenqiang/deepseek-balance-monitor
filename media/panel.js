@@ -14,7 +14,7 @@ function el(id) { return document.getElementById(id); }
 function formatCurrency(val, currency) {
   var num = parseFloat(val);
   if (isNaN(num)) { return '--'; }
-  return currency === 'USD' ? '$' + num.toFixed(2) : '¥' + num.toFixed(2);
+  return currency === 'USD' ? '$' + num.toFixed(2) : 'CNY ' + num.toFixed(2);
 }
 
 function formatUpdatedAt(ts) {
@@ -61,6 +61,22 @@ function hideTooltip(id) {
   if (tip) { tip.style.display = 'none'; }
 }
 
+function updatePetStatus(status) {
+  var btn = el('petBtn');
+  var label = el('petBtnLabel');
+  if (!btn || !label || !status) { return; }
+  var visualStatus = status.status === 'starting' ? 'running' : status.status;
+  btn.className = 'refresh-btn pet-btn ' + visualStatus;
+  if (status.status === 'running' || status.status === 'starting') {
+    label.textContent = 'Pet On';
+  } else if (status.status === 'error') {
+    label.textContent = 'Pet Err';
+  } else {
+    label.textContent = 'Pet';
+  }
+  btn.title = status.message || 'Toggle floating token pet';
+}
+
 // ==============================
 //  DEEPSEEK BALANCE
 // ==============================
@@ -88,7 +104,7 @@ function updateUI(data) {
   }
 
   if (stats) {
-    var sign = currentCurrency === 'USD' ? '$' : '¥';
+    var sign = currentCurrency === 'USD' ? '$' : 'CNY ';
     el('stat1h').textContent = sign + stats.last1h.toFixed(3);
     el('stat24h').textContent = sign + stats.last24h.toFixed(2);
     el('stat7d').textContent = sign + stats.last7d.toFixed(2);
@@ -127,7 +143,7 @@ function updateDaysRemaining(balanceVal, stats) {
 
 function showError(message) {
   el('error').style.display = 'block';
-  el('error').textContent = '⚠ ' + message;
+  el('error').textContent = 'Error: ' + message;
   el('chartContainer').style.display = 'none';
   el('stats').style.display = 'none';
 }
@@ -1230,7 +1246,7 @@ function renderProjectRanking(projects, data) {
     var name = decodeProjectName(p.projectDir);
     var pPath = p.projectPath || '';
     html += '<div class="session-row' + (pPath ? ' clickable' : '') + '"' + (pPath ? ' data-path="' + escapeHtml(pPath) + '"' : '') + '>' +
-      '<span>' + (pPath ? '📂 ' : '') + '#' + (i + 1) + ' ' + escapeHtml(name) + ' (' + p.callCount + ' calls)</span>' +
+      '<span>' + (pPath ? '[open] ' : '') + '#' + (i + 1) + ' ' + escapeHtml(name) + ' (' + p.callCount + ' calls)</span>' +
       '<span>' + fmtNum(tokens) + ' tok</span></div>';
   }
   list.innerHTML = html;
@@ -1380,10 +1396,10 @@ function buildTokenComposition(data, f, parent) {
   html += '<canvas id="compCanvas" style="width:100%;height:48px;"></canvas>';
   html += '<div class="chart-tooltip" id="compTooltip"></div></div>';
   html += '<div style="display:flex;gap:12px;margin-top:6px;font-size:10px;flex-wrap:wrap;">';
-  html += '<span style="color:#4fc3f7;">■ Input ' + fmtNum(inputT) + '</span>';
-  html += '<span style="color:#e57373;">■ Output ' + fmtNum(outputT) + '</span>';
-  html += '<span style="color:#81c784;">■ Cache Read ' + fmtNum(cacheRead) + '</span>';
-  html += '<span style="color:#ffb74d;">■ Cache Write ' + fmtNum(cacheCreate) + '</span>';
+  html += '<span style="color:#4fc3f7;">Input ' + fmtNum(inputT) + '</span>';
+  html += '<span style="color:#e57373;">Output ' + fmtNum(outputT) + '</span>';
+  html += '<span style="color:#81c784;">Cache Read ' + fmtNum(cacheRead) + '</span>';
+  html += '<span style="color:#ffb74d;">Cache Write ' + fmtNum(cacheCreate) + '</span>';
   html += '</div></div>';
   parent.innerHTML += html;
 
@@ -1671,7 +1687,7 @@ function buildCalendarHeatmap(data, f, parent) {
 // ---------- MONTH EXPORT ----------
 function buildExportButton(parent) {
   var html = '<div style="text-align:center;margin-top:10px;">';
-  html += '<button id="exportBtn" class="refresh-btn" style="font-size:11px;">📋 Export Monthly Report (Markdown)</button>';
+  html += '<button id="exportBtn" class="refresh-btn" style="font-size:11px;">Export Monthly Report (Markdown)</button>';
   html += '</div>';
   parent.innerHTML += html;
 
@@ -1704,7 +1720,7 @@ function generateMonthlyReport() {
   var projects = lastClaudeData.topProjects || [];
   var models = lastClaudeData.modelUsage || [];
 
-  var md = '# Monthly Usage Report — ' + ym + '\n\n';
+  var md = '# Monthly Usage Report - ' + ym + '\n\n';
   md += '## Summary\n';
   md += '- Total tokens: ' + fmtNum(totalT) + '\n';
   md += '- API calls: ' + fmtNum(calls) + '\n';
@@ -1740,7 +1756,7 @@ function generateMonthlyReport() {
 function buildCumulMetrics(data, parent) {
   var ds = data.dailyStats || [];
   var projects = data.topProjects || [];
-  var firstDate = ds.length > 0 ? ds[0].date : '—';
+  var firstDate = ds.length > 0 ? ds[0].date : '--';
   var totalMonths = 0;
   if (ds.length > 0) {
     var firstMonth = ds[0].date.slice(0, 7);
@@ -1757,7 +1773,7 @@ function buildCumulMetrics(data, parent) {
     if (!monthMap[mk]) { monthMap[mk] = 0; }
     monthMap[mk] += ds[i].tokenStats.inputTokens + ds[i].tokenStats.outputTokens + ds[i].tokenStats.cacheReadTokens;
   }
-  var peakMonth = '—', peakVal = 0;
+  var peakMonth = '--', peakVal = 0;
   var months = Object.keys(monthMap);
   for (var i = 0; i < months.length; i++) {
     if (monthMap[months[i]] > peakVal) { peakVal = monthMap[months[i]]; peakMonth = months[i]; }
@@ -1798,10 +1814,43 @@ window.addEventListener('message', function(event) {
   } else if (msg.command === 'config') {
     if (msg.lowBalanceThreshold !== undefined) { lowBalanceThreshold = msg.lowBalanceThreshold; }
     if (msg.lowDaysThreshold !== undefined) { lowDaysThreshold = msg.lowDaysThreshold; }
+  } else if (msg.command === 'petStatus') {
+    updatePetStatus(msg.status);
   }
 });
 
 el('refreshBtn').addEventListener('click', function() { vscode.postMessage({ command: 'refresh' }); });
+var petBtn = el('petBtn');
+if (petBtn) {
+  petBtn.addEventListener('click', function() { vscode.postMessage({ command: 'petToggle' }); });
+}
+var petMenuBtn = el('petMenuBtn');
+var petMenu = el('petMenu');
+var petSelectBtn = el('petSelectBtn');
+var petImportBtn = el('petImportBtn');
+if (petMenuBtn && petMenu) {
+  petMenuBtn.addEventListener('click', function(e) {
+    e.stopPropagation();
+    petMenu.classList.toggle('open');
+  });
+  document.addEventListener('click', function(e) {
+    if (!petMenu.contains(e.target) && e.target !== petMenuBtn) {
+      petMenu.classList.remove('open');
+    }
+  });
+}
+if (petSelectBtn) {
+  petSelectBtn.addEventListener('click', function() {
+    if (petMenu) { petMenu.classList.remove('open'); }
+    vscode.postMessage({ command: 'petSelect' });
+  });
+}
+if (petImportBtn) {
+  petImportBtn.addEventListener('click', function() {
+    if (petMenu) { petMenu.classList.remove('open'); }
+    vscode.postMessage({ command: 'petImport' });
+  });
+}
 
 // Tab bar
 var tabBar = el('claudeTabBar');
